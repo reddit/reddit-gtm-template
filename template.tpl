@@ -86,13 +86,6 @@ ___TEMPLATE_PARAMETERS___
     "simpleValueType": true,
     "name": "eventType",
     "type": "SELECT"
-  },
-  {
-    "defaultValue": true,
-    "simpleValueType": true,
-    "name": "enableFirstPartyCookies",
-    "checkboxText": "Enable First Party Cookies",
-    "type": "CHECKBOX"
   }
 ]
 
@@ -417,16 +410,10 @@ if (!_rdt.advertiserId) {
   _rdt('init', data.id);
 }
 
-if (!_rdt.enableFirstPartyCookies && data.enableFirstPartyCookies) {
-  _rdt('enableFirstPartyCookies');
-} else {
-  _rdt('disableFirstPartyCookies');
-}
-
 _rdt('track', data.eventType);
 injectScript('https://www.redditstatic.com/ads/pixel.js', data.gtmOnSuccess, data.gtmOnFailure, 'rdtPixel');
 
 
 ___NOTES___
 
-Created on 8/14/2019, 4:22:19 PM
+Created on 9/5/2019, 4:32:51 PM
