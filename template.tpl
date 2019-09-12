@@ -1,7 +1,7 @@
 ﻿___INFO___
 
 {
-  "displayName": "Reddit Pixel",
+  "displayName": "Reddit Tag",
   "description": "The official tag template for the Reddit Pixel",
   "securityGroups": [],
   "id": "cvt_temp_public_id",
@@ -22,6 +22,7 @@ ___TEMPLATE_PARAMETERS___
 
 [
   {
+    "help": "You can find your advertiser ID at http://ads.reddit.com/conversions#gtm",
     "valueValidators": [
       {
         "type": "NON_EMPTY"
@@ -40,7 +41,7 @@ ___TEMPLATE_PARAMETERS___
         "type": "REGEX"
       }
     ],
-    "displayName": "Advertiser ID (see http://ads.reddit.com/conversions#gtm)",
+    "displayName": "Advertiser ID",
     "simpleValueType": true,
     "name": "id",
     "type": "TEXT",
@@ -82,7 +83,7 @@ ___TEMPLATE_PARAMETERS___
         "value": "SignUp"
       }
     ],
-    "displayName": "Event",
+    "displayName": "Event to Fire",
     "simpleValueType": true,
     "name": "eventType",
     "type": "SELECT"
@@ -416,4 +417,4 @@ injectScript('https://www.redditstatic.com/ads/pixel.js', data.gtmOnSuccess, dat
 
 ___NOTES___
 
-Created on 9/5/2019, 4:32:51 PM
+Created on 9/12/2019, 12:00:22 PM
