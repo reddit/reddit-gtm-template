@@ -1,5 +1,5 @@
 homepage: "https://www.redditinc.com/advertising",
 documentation: "",
 versions:
-  sha: b39e71cda3c5cc04f83c2fafb86122b5dbd8da15
+  sha: cb0b67473467420d065082ed059b45277079afca
   changeNotes: Initial release.
