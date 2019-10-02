@@ -1,8 +1,9 @@
-﻿___INFO___
+ ___INFO___
 
 {
   "displayName": "Reddit Tag",
   "description": "The Reddit Tag template can help you fire conversion events from your website to measure the success of your ads on the Reddit platform",
+  "categories": ["ADVERTISING", "CONVERSION_TRACKING"],
   "securityGroups": [],
   "id": "cvt_temp_public_id",
   "type": "TAG",
