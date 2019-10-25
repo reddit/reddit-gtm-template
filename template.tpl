@@ -2,7 +2,7 @@
 
 {
   "displayName": "Reddit Tag",
-  "description": "The Reddit Tag template can help you fire conversion events from your website to measure the success of your ads on the Reddit platform",
+  "description": "By using the Reddit Conversion Pixel you agree to comply with and to be bound by the Reddit Advertiser Measurement Program Terms\n\nhttps://www.reddithelp.com/en/categories/advertising/policy-guideline",
   "securityGroups": [],
   "id": "cvt_temp_public_id",
   "type": "TAG",
@@ -417,4 +417,4 @@ injectScript('https://www.redditstatic.com/ads/pixel.js', data.gtmOnSuccess, dat
 
 ___NOTES___
 
-Created on 9/12/2019, 12:07:57 PM
+Created on 10/25/2019, 10:02:43 AM
