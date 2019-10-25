@@ -1,9 +1,16 @@
- ___INFO___
+﻿___TERMS_OF_SERVICE___
+
+By creating or modifying this file you agree to Google Tag Manager's Community
+Template Gallery Developer Terms of Service available at
+https://developers.google.com/tag-manager/gallery-tos (or such other URL as
+Google may provide), as modified from time to time.
+
+
+___INFO___
 
 {
   "displayName": "Reddit Tag",
   "description": "By using the Reddit Conversion Pixel you agree to comply with and to be bound by the Reddit Advertiser Measurement Program Terms\n\nhttps://www.reddithelp.com/en/categories/advertising/policy-guideline",
-  "categories": ["ADVERTISING", "CONVERSION_TRACKING"],
   "securityGroups": [],
   "id": "cvt_temp_public_id",
   "type": "TAG",
@@ -418,4 +425,4 @@ injectScript('https://www.redditstatic.com/ads/pixel.js', data.gtmOnSuccess, dat
 
 ___NOTES___
 
-Created on 10/25/2019, 10:02:43 AM
+Created on 10/25/2019, 10:16:35 AM
