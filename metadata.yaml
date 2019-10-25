@@ -1,5 +1,5 @@
 homepage: "https://www.redditinc.com/advertising",
-documentation: "",
+documentation: "https://www.reddithelp.com/en/categories/advertising/creating-ads/conversion-pixel#N6",
 versions:
-  sha: 33965518ba17b6b169e0bf3fbc7037315253ee34
+  sha: 224f996428559d2a6624e642ff3929d37e528cb7
   changeNotes: Initial release.

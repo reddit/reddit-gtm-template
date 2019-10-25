@@ -1,8 +1,9 @@
-﻿___INFO___
+ ___INFO___
 
 {
   "displayName": "Reddit Tag",
   "description": "By using the Reddit Conversion Pixel you agree to comply with and to be bound by the Reddit Advertiser Measurement Program Terms\n\nhttps://www.reddithelp.com/en/categories/advertising/policy-guideline",
+  "categories": ["ADVERTISING", "CONVERSION_TRACKING"],
   "securityGroups": [],
   "id": "cvt_temp_public_id",
   "type": "TAG",
