@@ -1,5 +1,9 @@
 homepage: "https://www.redditinc.com/advertising"
 documentation: "https://www.reddithelp.com/en/categories/advertising/creating-ads/conversion-pixel#N6"
 versions:
+  # Latest Version
   - sha: bda14442e2900ca6c3b650a1ac09bc6a9a156404
     changeNotes: Update name to Reddit Pixel.
+  # Older versions
+  - sha: a04640ed8c3fe0abb815b334a995ea81f9e3999b
+    changeNotes: Initial release.
