@@ -95,6 +95,13 @@ ___TEMPLATE_PARAMETERS___
     "simpleValueType": true,
     "name": "eventType",
     "type": "SELECT"
+  },
+  {
+    "type": "CHECKBOX",
+    "name": "enableFirstPartyCookies",
+    "checkboxText": "Enable First Party Cookies",
+    "simpleValueType": true,
+    "defaultValue": true
   }
 ]
 
@@ -129,6 +136,10 @@ var getRdt = function() {
 var _rdt = getRdt();
 if (!_rdt.advertiserId) {
   _rdt('init', data.id);
+}
+
+if (!data.enableFirstPartyCookies) {
+  _rdt('disableFirstPartyCookies');
 }
 
 _rdt('track', data.eventType);
@@ -430,6 +441,6 @@ scenarios: []
 
 ___NOTES___
 
-Created on 10/28/2019, 8:24:38 PM
+Created on 1/13/2020, 9:31:41 AM
 
 
