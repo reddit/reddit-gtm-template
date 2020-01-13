@@ -9,7 +9,7 @@ Google may provide), as modified from time to time.
 ___INFO___
 
 {
-  "displayName": "Reddit Tag",
+  "displayName": "Reddit Pixel",
   "description": "By using the Reddit Conversion Pixel you agree to comply with and to be bound by the Reddit Advertiser Measurement Program Terms\n\nhttps://www.reddithelp.com/en/categories/advertising/policy-guideline",
   "securityGroups": [],
   "id": "cvt_temp_public_id",
