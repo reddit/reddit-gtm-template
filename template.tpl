@@ -645,11 +645,20 @@ scenarios:
     // Verify that the tag finished successfully.
     assertApi('gtmOnSuccess').wasCalled();
 - name: Test Tracking Event Type
-  code: "mock('copyFromWindow', key => {\n  if (key === 'rdt') return function() {\n\
-    \    if (arguments[0] === 'track') {\n      assertThat(arguments[1], 'Incorrect\
-    \ Tracking Event Type').isEqualTo(mockData.eventType);\n    }\n  };\n});\n   \
-    \  \n// Call runCode to run the template's code.\nrunCode(mockData);\n\n// Verify\
-    \ that the tag finished successfully.\nassertApi('gtmOnSuccess').wasCalled();"
+  code: |-
+    mock('copyFromWindow', key => {
+      if (key === 'rdt') return function() {
+        if (arguments[0] === 'track') {
+          assertThat(arguments[1], 'Incorrect Tracking Event Type').isEqualTo(mockData.eventType);
+        }
+      };
+    });
+
+    // Call runCode to run the template's code.
+    runCode(mockData);
+
+    // Verify that the tag finished successfully.
+    assertApi('gtmOnSuccess').wasCalled();
 setup: |-
   let mockData = {
     id: 't2_123',
