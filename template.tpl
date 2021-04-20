@@ -127,10 +127,6 @@ ___TEMPLATE_PARAMETERS___
             "type": "SELECT",
             "selectItems": [
               {
-                "value": "optOut",
-                "displayValue": "Opt Out"
-              },
-              {
                 "value": "email",
                 "displayValue": "Email"
               },
@@ -602,7 +598,6 @@ scenarios:
       enableFirstPartyCookies: true,
       advancedMatching: true,
       advancedMatchingParams: [
-        {name: 'optOut', value: 1},
         {name: 'email', value: 'alice@example.com'},
         {name: 'aaid', value: 'cdda802e-fb9c-47ad-9866-0794d394c912'},
         {name: 'idfa', value: 'EA7583CD-A667-48BC-B806-42ECB2B48606'}
@@ -610,7 +605,6 @@ scenarios:
     };
 
     const expectedAdvancedParams = {
-      optOut: 1,
       email: 'alice@example.com',
       aaid: 'cdda802e-fb9c-47ad-9866-0794d394c912',
       idfa: 'EA7583CD-A667-48BC-B806-42ECB2B48606'
