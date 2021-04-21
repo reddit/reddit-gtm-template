@@ -162,8 +162,7 @@ ___TEMPLATE_PARAMETERS___
         "paramValue": true,
         "type": "EQUALS"
       }
-    ],
-    "help": "Advanced Matching Parameters must be pushed to the Data Layer."
+    ]
   }
 ]
 
