@@ -30,7 +30,7 @@ ___TEMPLATE_PARAMETERS___
 
 [
   {
-    "help": "You can find your advertiser ID at http://ads.reddit.com/conversions#gtm",
+    "help": "You can find your advertiser ID at \u003ca href\u003d\"http://ads.reddit.com/conversions#gtm\"\u003ehttp://ads.reddit.com/conversions#gtm\u003c/a\u003e",
     "valueValidators": [
       {
         "type": "NON_EMPTY"
@@ -137,6 +137,10 @@ ___TEMPLATE_PARAMETERS___
               {
                 "value": "idfa",
                 "displayValue": "IDFA"
+              },
+              {
+                "value": "externalId",
+                "displayValue": "External ID"
               }
             ],
             "isUnique": true,
