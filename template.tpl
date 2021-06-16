@@ -105,6 +105,71 @@ ___TEMPLATE_PARAMETERS___
   },
   {
     "type": "CHECKBOX",
+    "name": "eventMetadata",
+    "checkboxText": "Add Additional Event Information",
+    "simpleValueType": true
+  },
+  {
+    "type": "GROUP",
+    "name": "eventMetadataGroup",
+    "displayName": "Additional Event Information",
+    "groupStyle": "ZIPPY_OPEN",
+    "subParams": [
+      {
+        "type": "SIMPLE_TABLE",
+        "name": "eventMetadataParams",
+        "displayName": "",
+        "simpleTableColumns": [
+          {
+            "defaultValue": "",
+            "displayName": "Parameter Name",
+            "name": "name",
+            "type": "SELECT",
+            "selectItems": [
+              {
+                "value": "m.itemCount",
+                "displayValue": "Item Count"
+              },
+              {
+                "value": "m.value",
+                "displayValue": "Event Value"
+              },
+              {
+                "value": "m.currency",
+                "displayValue": "Currency"
+              },
+              {
+                "value": "m.transactionId",
+                "displayValue": "Transaction ID"
+              }
+            ],
+            "isUnique": true,
+            "macrosInSelect": false
+          },
+          {
+            "defaultValue": "",
+            "displayName": "Parameter Value",
+            "name": "value",
+            "type": "TEXT",
+            "valueValidators": [
+              {
+                "type": "NON_EMPTY"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "enablingConditions": [
+      {
+        "paramName": "eventMetadata",
+        "paramValue": true,
+        "type": "EQUALS"
+      }
+    ]
+  },
+  {
+    "type": "CHECKBOX",
     "name": "advancedMatching",
     "checkboxText": "Enable Advanced Matching",
     "simpleValueType": true
@@ -212,7 +277,10 @@ if (!data.enableFirstPartyCookies) {
   _rdt('disableFirstPartyCookies');
 }
 
-_rdt('track', data.eventType);
+var eventMetadata = data.eventMetadataParams && data.eventMetadataParams.length ? makeTableMap(data.eventMetadataParams, 'name', 'value') :  {};
+
+_rdt('track', data.eventType, eventMetadata);
+
 injectScript('https://www.redditstatic.com/ads/pixel.js', data.gtmOnSuccess, data.gtmOnFailure, 'rdtPixel');
 
 
@@ -629,6 +697,42 @@ scenarios:
 
     // Verify that the tag finished successfully.
     assertApi('makeTableMap').wasCalledWith(mockData.advancedMatchingParams, 'name', 'value');
+    assertApi('gtmOnSuccess').wasCalled();
+- name: Test Event Metadata
+  code: |-
+    mockData = {
+      id: "t2_potato",
+      event_type: "Purchase",
+      enableFirstPartyCookies: true,
+      eventMetadata: true,
+      eventMetadataParams: [
+        {name: "m.itemCount", value: "1"},
+        {name: "m.value", value: "1000"},
+        {name: "m.currency", value: "USD"},
+        {name: "m.transactionId", value: "123456789"},
+      ]
+    };
+
+    const expected = {
+      'm.itemCount': '1',
+      'm.value': '1000',
+      'm.currency': 'USD',
+      'm.transactionId': '123456789'
+    };
+
+    mock('copyFromWindow', key => {
+      if (key === 'rdt') return function() {
+        if (arguments[0] === 'track') {
+          assertThat(arguments[2], 'Event metadata parameters incorrect').isEqualTo(expected);
+        }
+      };
+    });
+
+    // Call runCode to run the template's code.
+    runCode(mockData);
+
+    // Verify that the tag finished successfully.
+    assertApi('makeTableMap').wasCalledWith(mockData.eventMetadataParams, 'name', 'value');
     assertApi('gtmOnSuccess').wasCalled();
 - name: Test pixel init - set Advertiser ID and integration type
   code: |-
