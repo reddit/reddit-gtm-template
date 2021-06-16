@@ -105,71 +105,6 @@ ___TEMPLATE_PARAMETERS___
   },
   {
     "type": "CHECKBOX",
-    "name": "eventMetadata",
-    "checkboxText": "Add Additional Event Information",
-    "simpleValueType": true
-  },
-  {
-    "type": "GROUP",
-    "name": "eventMetadataGroup",
-    "displayName": "Additional Event Information",
-    "groupStyle": "ZIPPY_OPEN",
-    "subParams": [
-      {
-        "type": "SIMPLE_TABLE",
-        "name": "eventMetadataParams",
-        "displayName": "",
-        "simpleTableColumns": [
-          {
-            "defaultValue": "",
-            "displayName": "Parameter Name",
-            "name": "name",
-            "type": "SELECT",
-            "selectItems": [
-              {
-                "value": "m.itemCount",
-                "displayValue": "Item Count"
-              },
-              {
-                "value": "m.value",
-                "displayValue": "Event Value"
-              },
-              {
-                "value": "m.currency",
-                "displayValue": "Currency"
-              },
-              {
-                "value": "m.transactionId",
-                "displayValue": "Transaction ID"
-              }
-            ],
-            "isUnique": true,
-            "macrosInSelect": false
-          },
-          {
-            "defaultValue": "",
-            "displayName": "Parameter Value",
-            "name": "value",
-            "type": "TEXT",
-            "valueValidators": [
-              {
-                "type": "NON_EMPTY"
-              }
-            ]
-          }
-        ]
-      }
-    ],
-    "enablingConditions": [
-      {
-        "paramName": "eventMetadata",
-        "paramValue": true,
-        "type": "EQUALS"
-      }
-    ]
-  },
-  {
-    "type": "CHECKBOX",
     "name": "advancedMatching",
     "checkboxText": "Enable Advanced Matching",
     "simpleValueType": true
@@ -230,6 +165,58 @@ ___TEMPLATE_PARAMETERS___
         "paramName": "advancedMatching",
         "paramValue": true,
         "type": "EQUALS"
+      }
+    ]
+  },
+  {
+    "type": "GROUP",
+    "name": "eventMetadataGroup",
+    "displayName": "Additional Event Information",
+    "groupStyle": "ZIPPY_CLOSED",
+    "subParams": [
+      {
+        "type": "SIMPLE_TABLE",
+        "name": "eventMetadataParams",
+        "displayName": "",
+        "simpleTableColumns": [
+          {
+            "defaultValue": "",
+            "displayName": "Parameter Name",
+            "name": "name",
+            "type": "SELECT",
+            "selectItems": [
+              {
+                "value": "m.itemCount",
+                "displayValue": "Item Count"
+              },
+              {
+                "value": "m.value",
+                "displayValue": "Event Value"
+              },
+              {
+                "value": "m.currency",
+                "displayValue": "Currency"
+              },
+              {
+                "value": "m.transactionId",
+                "displayValue": "Transaction ID"
+              }
+            ],
+            "isUnique": true,
+            "macrosInSelect": false
+          },
+          {
+            "defaultValue": "",
+            "displayName": "Parameter Value",
+            "name": "value",
+            "type": "TEXT",
+            "valueValidators": [
+              {
+                "type": "NON_EMPTY"
+              }
+            ]
+          }
+        ]
       }
     ]
   }
