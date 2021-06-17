@@ -186,19 +186,19 @@ ___TEMPLATE_PARAMETERS___
             "type": "SELECT",
             "selectItems": [
               {
-                "value": "m.itemCount",
+                "value": "itemCount",
                 "displayValue": "Item Count"
               },
               {
-                "value": "m.value",
+                "value": "value",
                 "displayValue": "Event Value"
               },
               {
-                "value": "m.currency",
+                "value": "currency",
                 "displayValue": "Currency"
               },
               {
-                "value": "m.transactionId",
+                "value": "transactionId",
                 "displayValue": "Transaction ID"
               }
             ],
@@ -691,20 +691,19 @@ scenarios:
       id: "t2_potato",
       event_type: "Purchase",
       enableFirstPartyCookies: true,
-      eventMetadata: true,
       eventMetadataParams: [
-        {name: "m.itemCount", value: "1"},
-        {name: "m.value", value: "1000"},
-        {name: "m.currency", value: "USD"},
-        {name: "m.transactionId", value: "123456789"},
+        {name: "itemCount", value: "1"},
+        {name: "value", value: "1000"},
+        {name: "currency", value: "USD"},
+        {name: "transactionId", value: "123456789"},
       ]
     };
 
     const expected = {
-      'm.itemCount': '1',
-      'm.value': '1000',
-      'm.currency': 'USD',
-      'm.transactionId': '123456789'
+      itemCount: '1',
+      value: '1000',
+      currency: 'USD',
+      transactionId: '123456789'
     };
 
     mock('copyFromWindow', key => {
