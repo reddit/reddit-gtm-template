@@ -97,6 +97,85 @@ ___TEMPLATE_PARAMETERS___
     "type": "SELECT"
   },
   {
+    "type": "GROUP",
+    "name": "eventMetadataGroup",
+    "displayName": "Additional Event Information",
+    "groupStyle": "NO_ZIPPY",
+    "subParams": [
+      {
+        "type": "SIMPLE_TABLE",
+        "name": "eventMetadataParams",
+        "displayName": "",
+        "simpleTableColumns": [
+          {
+            "defaultValue": "",
+            "displayName": "Parameter Name",
+            "name": "name",
+            "type": "SELECT",
+            "selectItems": [
+              {
+                "value": "itemCount",
+                "displayValue": "Item Count"
+              },
+              {
+                "value": "value",
+                "displayValue": "Event Value"
+              },
+              {
+                "value": "currency",
+                "displayValue": "Currency"
+              },
+              {
+                "value": "transactionId",
+                "displayValue": "Transaction ID"
+              }
+            ],
+            "isUnique": true,
+            "macrosInSelect": false
+          },
+          {
+            "defaultValue": "",
+            "displayName": "Parameter Value",
+            "name": "value",
+            "type": "TEXT",
+            "valueValidators": [
+              {
+                "type": "NON_EMPTY"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "enablingConditions": [
+      {
+        "paramName": "eventType",
+        "paramValue": "AddToCart",
+        "type": "EQUALS"
+      },
+      {
+        "paramName": "eventType",
+        "paramValue": "AddToWishlist",
+        "type": "EQUALS"
+      },
+      {
+        "paramName": "eventType",
+        "paramValue": "Purchase",
+        "type": "EQUALS"
+      },
+      {
+        "paramName": "eventType",
+        "paramValue": "Lead",
+        "type": "EQUALS"
+      },
+      {
+        "paramName": "eventType",
+        "paramValue": "SignUp",
+        "type": "EQUALS"
+      }
+    ]
+  },
+  {
     "type": "CHECKBOX",
     "name": "enableFirstPartyCookies",
     "checkboxText": "Enable First Party Cookies",
@@ -165,58 +244,6 @@ ___TEMPLATE_PARAMETERS___
         "paramName": "advancedMatching",
         "paramValue": true,
         "type": "EQUALS"
-      }
-    ]
-  },
-  {
-    "type": "GROUP",
-    "name": "eventMetadataGroup",
-    "displayName": "Additional Event Information",
-    "groupStyle": "ZIPPY_CLOSED",
-    "subParams": [
-      {
-        "type": "SIMPLE_TABLE",
-        "name": "eventMetadataParams",
-        "displayName": "",
-        "simpleTableColumns": [
-          {
-            "defaultValue": "",
-            "displayName": "Parameter Name",
-            "name": "name",
-            "type": "SELECT",
-            "selectItems": [
-              {
-                "value": "itemCount",
-                "displayValue": "Item Count"
-              },
-              {
-                "value": "value",
-                "displayValue": "Event Value"
-              },
-              {
-                "value": "currency",
-                "displayValue": "Currency"
-              },
-              {
-                "value": "transactionId",
-                "displayValue": "Transaction ID"
-              }
-            ],
-            "isUnique": true,
-            "macrosInSelect": false
-          },
-          {
-            "defaultValue": "",
-            "displayName": "Parameter Value",
-            "name": "value",
-            "type": "TEXT",
-            "valueValidators": [
-              {
-                "type": "NON_EMPTY"
-              }
-            ]
-          }
-        ]
       }
     ]
   }
