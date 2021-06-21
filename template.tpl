@@ -719,16 +719,16 @@ scenarios:
       event_type: "Purchase",
       enableFirstPartyCookies: true,
       eventMetadataParams: [
-        {name: "itemCount", value: "1"},
-        {name: "value", value: "1000"},
+        {name: "itemCount", value: 1},
+        {name: "value", value: 1000},
         {name: "currency", value: "USD"},
         {name: "transactionId", value: "123456789"},
       ]
     };
 
     const expected = {
-      itemCount: '1',
-      value: '1000',
+      itemCount: 1,
+      value: 1000,
       currency: 'USD',
       transactionId: '123456789'
     };
