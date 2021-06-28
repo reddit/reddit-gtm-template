@@ -97,6 +97,85 @@ ___TEMPLATE_PARAMETERS___
     "type": "SELECT"
   },
   {
+    "type": "GROUP",
+    "name": "eventMetadataGroup",
+    "displayName": "Additional Event Information",
+    "groupStyle": "NO_ZIPPY",
+    "subParams": [
+      {
+        "type": "SIMPLE_TABLE",
+        "name": "eventMetadataParams",
+        "displayName": "",
+        "simpleTableColumns": [
+          {
+            "defaultValue": "",
+            "displayName": "Parameter Name",
+            "name": "name",
+            "type": "SELECT",
+            "selectItems": [
+              {
+                "value": "itemCount",
+                "displayValue": "Item Count"
+              },
+              {
+                "value": "value",
+                "displayValue": "Event Value"
+              },
+              {
+                "value": "currency",
+                "displayValue": "Currency"
+              },
+              {
+                "value": "transactionId",
+                "displayValue": "Transaction ID"
+              }
+            ],
+            "isUnique": true,
+            "macrosInSelect": false
+          },
+          {
+            "defaultValue": "",
+            "displayName": "Parameter Value",
+            "name": "value",
+            "type": "TEXT",
+            "valueValidators": [
+              {
+                "type": "NON_EMPTY"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "enablingConditions": [
+      {
+        "paramName": "eventType",
+        "paramValue": "AddToCart",
+        "type": "EQUALS"
+      },
+      {
+        "paramName": "eventType",
+        "paramValue": "AddToWishlist",
+        "type": "EQUALS"
+      },
+      {
+        "paramName": "eventType",
+        "paramValue": "Purchase",
+        "type": "EQUALS"
+      },
+      {
+        "paramName": "eventType",
+        "paramValue": "Lead",
+        "type": "EQUALS"
+      },
+      {
+        "paramName": "eventType",
+        "paramValue": "SignUp",
+        "type": "EQUALS"
+      }
+    ]
+  },
+  {
     "type": "CHECKBOX",
     "name": "enableFirstPartyCookies",
     "checkboxText": "Enable First Party Cookies",
@@ -212,7 +291,10 @@ if (!data.enableFirstPartyCookies) {
   _rdt('disableFirstPartyCookies');
 }
 
-_rdt('track', data.eventType);
+var eventMetadata = data.eventMetadataParams && data.eventMetadataParams.length ? makeTableMap(data.eventMetadataParams, 'name', 'value') :  {};
+
+_rdt('track', data.eventType, eventMetadata);
+
 injectScript('https://www.redditstatic.com/ads/pixel.js', data.gtmOnSuccess, data.gtmOnFailure, 'rdtPixel');
 
 
@@ -629,6 +711,41 @@ scenarios:
 
     // Verify that the tag finished successfully.
     assertApi('makeTableMap').wasCalledWith(mockData.advancedMatchingParams, 'name', 'value');
+    assertApi('gtmOnSuccess').wasCalled();
+- name: Test Event Metadata
+  code: |-
+    mockData = {
+      id: "t2_potato",
+      event_type: "Purchase",
+      enableFirstPartyCookies: true,
+      eventMetadataParams: [
+        {name: "itemCount", value: 1},
+        {name: "value", value: 1000},
+        {name: "currency", value: "USD"},
+        {name: "transactionId", value: "123456789"},
+      ]
+    };
+
+    const expected = {
+      itemCount: 1,
+      value: 1000,
+      currency: 'USD',
+      transactionId: '123456789'
+    };
+
+    mock('copyFromWindow', key => {
+      if (key === 'rdt') return function() {
+        if (arguments[0] === 'track') {
+          assertThat(arguments[2], 'Event metadata parameters incorrect').isEqualTo(expected);
+        }
+      };
+    });
+
+    // Call runCode to run the template's code.
+    runCode(mockData);
+
+    // Verify that the tag finished successfully.
+    assertApi('makeTableMap').wasCalledWith(mockData.eventMetadataParams, 'name', 'value');
     assertApi('gtmOnSuccess').wasCalled();
 - name: Test pixel init - set Advertiser ID and integration type
   code: |-
