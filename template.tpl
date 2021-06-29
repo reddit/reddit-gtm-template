@@ -119,7 +119,7 @@ ___TEMPLATE_PARAMETERS___
               },
               {
                 "value": "value",
-                "displayValue": "Event Value"
+                "displayValue": "Transaction Value (in smallest subunit of currency)"
               },
               {
                 "value": "currency",
