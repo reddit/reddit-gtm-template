@@ -97,56 +97,10 @@ ___TEMPLATE_PARAMETERS___
     "type": "SELECT"
   },
   {
-    "type": "GROUP",
-    "name": "eventMetadataGroup",
-    "displayName": "Additional Event Information",
-    "groupStyle": "NO_ZIPPY",
-    "subParams": [
-      {
-        "type": "SIMPLE_TABLE",
-        "name": "eventMetadataParams",
-        "displayName": "",
-        "simpleTableColumns": [
-          {
-            "defaultValue": "",
-            "displayName": "Parameter Name",
-            "name": "name",
-            "type": "SELECT",
-            "selectItems": [
-              {
-                "value": "itemCount",
-                "displayValue": "Item Count"
-              },
-              {
-                "value": "value",
-                "displayValue": "Transaction Value (in smallest subunit of currency)"
-              },
-              {
-                "value": "currency",
-                "displayValue": "Currency"
-              },
-              {
-                "value": "transactionId",
-                "displayValue": "Transaction ID"
-              }
-            ],
-            "isUnique": true,
-            "macrosInSelect": false
-          },
-          {
-            "defaultValue": "",
-            "displayName": "Parameter Value",
-            "name": "value",
-            "type": "TEXT",
-            "valueValidators": [
-              {
-                "type": "NON_EMPTY"
-              }
-            ]
-          }
-        ]
-      }
-    ],
+    "type": "TEXT",
+    "name": "currency",
+    "displayName": "Currency",
+    "simpleValueType": true,
     "enablingConditions": [
       {
         "paramName": "eventType",
@@ -165,12 +119,93 @@ ___TEMPLATE_PARAMETERS___
       },
       {
         "paramName": "eventType",
+        "paramValue": "SignUp",
+        "type": "EQUALS"
+      },
+      {
+        "paramName": "eventType",
         "paramValue": "Lead",
+        "type": "EQUALS"
+      }
+    ],
+    "help": "Currency should follow the ISO 4217 standard"
+  },
+  {
+    "type": "TEXT",
+    "name": "transactionValue",
+    "displayName": "Transaction Value",
+    "simpleValueType": true,
+    "enablingConditions": [
+      {
+        "paramName": "eventType",
+        "paramValue": "AddToCart",
+        "type": "EQUALS"
+      },
+      {
+        "paramName": "eventType",
+        "paramValue": "AddToWishlist",
+        "type": "EQUALS"
+      },
+      {
+        "paramName": "eventType",
+        "paramValue": "Purchase",
         "type": "EQUALS"
       },
       {
         "paramName": "eventType",
         "paramValue": "SignUp",
+        "type": "EQUALS"
+      },
+      {
+        "paramName": "eventType",
+        "paramValue": "Lead",
+        "type": "EQUALS"
+      }
+    ],
+    "help": "The transaction value should be reported as the smallest subunit of currency"
+  },
+  {
+    "type": "TEXT",
+    "name": "itemCount",
+    "displayName": "Item Count",
+    "simpleValueType": true,
+    "enablingConditions": [
+      {
+        "paramName": "eventType",
+        "paramValue": "AddToCart",
+        "type": "EQUALS"
+      },
+      {
+        "paramName": "eventType",
+        "paramValue": "AddToWishlist",
+        "type": "EQUALS"
+      },
+      {
+        "paramName": "eventType",
+        "paramValue": "Purchase",
+        "type": "EQUALS"
+      }
+    ]
+  },
+  {
+    "type": "TEXT",
+    "name": "transactionId",
+    "displayName": "Transaction ID",
+    "simpleValueType": true,
+    "enablingConditions": [
+      {
+        "paramName": "eventType",
+        "paramValue": "Purchase",
+        "type": "EQUALS"
+      },
+      {
+        "paramName": "eventType",
+        "paramValue": "SignUp",
+        "type": "EQUALS"
+      },
+      {
+        "paramName": "eventType",
+        "paramValue": "Lead",
         "type": "EQUALS"
       }
     ]
@@ -291,7 +326,20 @@ if (!data.enableFirstPartyCookies) {
   _rdt('disableFirstPartyCookies');
 }
 
-var eventMetadata = data.eventMetadataParams && data.eventMetadataParams.length ? makeTableMap(data.eventMetadataParams, 'name', 'value') :  {};
+
+var eventMetadata = {
+  currency: data.currency,
+  value: data.transactionValue,
+};
+
+// Certain events don't support certain params, so we conditionally set them
+if (data.eventType != "AddToCart" && data.eventType != "AddToWishlist") {
+  eventMetadata.transactionId = data.transactionId;
+}
+
+if (data.eventType != "SignUp" && data.eventType != "Lead") {
+  eventMetadata.itemCount = data.itemCount;
+}
 
 _rdt('track', data.eventType, eventMetadata);
 
@@ -712,18 +760,16 @@ scenarios:
     // Verify that the tag finished successfully.
     assertApi('makeTableMap').wasCalledWith(mockData.advancedMatchingParams, 'name', 'value');
     assertApi('gtmOnSuccess').wasCalled();
-- name: Test Event Metadata
+- name: Test Event Metadata Purchase
   code: |-
     mockData = {
       id: "t2_potato",
-      event_type: "Purchase",
+      eventType: "Purchase",
       enableFirstPartyCookies: true,
-      eventMetadataParams: [
-        {name: "itemCount", value: 1},
-        {name: "value", value: 1000},
-        {name: "currency", value: "USD"},
-        {name: "transactionId", value: "123456789"},
-      ]
+      itemCount: 1,
+      transactionValue: 1000,
+      currency: "USD",
+      transactionId: "123456789",
     };
 
     const expected = {
@@ -745,7 +791,68 @@ scenarios:
     runCode(mockData);
 
     // Verify that the tag finished successfully.
-    assertApi('makeTableMap').wasCalledWith(mockData.eventMetadataParams, 'name', 'value');
+    assertApi('gtmOnSuccess').wasCalled();
+- name: Test Event Metadata TransactionId Omission
+  code: |-
+    mockData = {
+      id: "t2_potato",
+      eventType: "AddToCart",
+      enableFirstPartyCookies: true,
+      itemCount: 1,
+      transactionValue: 1000,
+      currency: "USD",
+      transactionId: "123456789",
+    };
+
+    const expected = {
+      itemCount: 1,
+      value: 1000,
+      currency: 'USD',
+    };
+
+    mock('copyFromWindow', key => {
+      if (key === 'rdt') return function() {
+        if (arguments[0] === 'track') {
+          assertThat(arguments[2], 'Event metadata parameters incorrect').isEqualTo(expected);
+        }
+      };
+    });
+
+    // Call runCode to run the template's code.
+    runCode(mockData);
+
+    // Verify that the tag finished successfully.
+    assertApi('gtmOnSuccess').wasCalled();
+- name: Test Event Metadata ItemCount Omission
+  code: |-
+    mockData = {
+      id: "t2_potato",
+      eventType: "AddToCart",
+      enableFirstPartyCookies: true,
+      itemCount: 1,
+      transactionValue: 1000,
+      currency: "USD",
+      transactionId: "123456789",
+    };
+
+    const expected = {
+      itemCount: 1,
+      value: 1000,
+      currency: 'USD',
+    };
+
+    mock('copyFromWindow', key => {
+      if (key === 'rdt') return function() {
+        if (arguments[0] === 'track') {
+          assertThat(arguments[2], 'Event metadata parameters incorrect').isEqualTo(expected);
+        }
+      };
+    });
+
+    // Call runCode to run the template's code.
+    runCode(mockData);
+
+    // Verify that the tag finished successfully.
     assertApi('gtmOnSuccess').wasCalled();
 - name: Test pixel init - set Advertiser ID and integration type
   code: |-
