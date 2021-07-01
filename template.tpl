@@ -97,6 +97,120 @@ ___TEMPLATE_PARAMETERS___
     "type": "SELECT"
   },
   {
+    "type": "TEXT",
+    "name": "currency",
+    "displayName": "Currency",
+    "simpleValueType": true,
+    "enablingConditions": [
+      {
+        "paramName": "eventType",
+        "paramValue": "AddToCart",
+        "type": "EQUALS"
+      },
+      {
+        "paramName": "eventType",
+        "paramValue": "AddToWishlist",
+        "type": "EQUALS"
+      },
+      {
+        "paramName": "eventType",
+        "paramValue": "Purchase",
+        "type": "EQUALS"
+      },
+      {
+        "paramName": "eventType",
+        "paramValue": "SignUp",
+        "type": "EQUALS"
+      },
+      {
+        "paramName": "eventType",
+        "paramValue": "Lead",
+        "type": "EQUALS"
+      }
+    ],
+    "help": "Currency should follow the ISO 4217 standard"
+  },
+  {
+    "type": "TEXT",
+    "name": "transactionValue",
+    "displayName": "Transaction Value",
+    "simpleValueType": true,
+    "enablingConditions": [
+      {
+        "paramName": "eventType",
+        "paramValue": "AddToCart",
+        "type": "EQUALS"
+      },
+      {
+        "paramName": "eventType",
+        "paramValue": "AddToWishlist",
+        "type": "EQUALS"
+      },
+      {
+        "paramName": "eventType",
+        "paramValue": "Purchase",
+        "type": "EQUALS"
+      },
+      {
+        "paramName": "eventType",
+        "paramValue": "SignUp",
+        "type": "EQUALS"
+      },
+      {
+        "paramName": "eventType",
+        "paramValue": "Lead",
+        "type": "EQUALS"
+      }
+    ],
+    "help": "The transaction value should be reported as the smallest subunit of currency"
+  },
+  {
+    "type": "TEXT",
+    "name": "itemCount",
+    "displayName": "Item Count",
+    "simpleValueType": true,
+    "enablingConditions": [
+      {
+        "paramName": "eventType",
+        "paramValue": "AddToCart",
+        "type": "EQUALS"
+      },
+      {
+        "paramName": "eventType",
+        "paramValue": "AddToWishlist",
+        "type": "EQUALS"
+      },
+      {
+        "paramName": "eventType",
+        "paramValue": "Purchase",
+        "type": "EQUALS"
+      }
+    ]
+  },
+  {
+    "type": "TEXT",
+    "name": "transactionId",
+    "displayName": "Transaction ID",
+    "simpleValueType": true,
+    "enablingConditions": [
+      {
+        "paramName": "eventType",
+        "paramValue": "Purchase",
+        "type": "EQUALS"
+      },
+      {
+        "paramName": "eventType",
+        "paramValue": "SignUp",
+        "type": "EQUALS"
+      },
+      {
+        "paramName": "eventType",
+        "paramValue": "Lead",
+        "type": "EQUALS"
+      }
+    ]
+  },
+  {
     "type": "CHECKBOX",
     "name": "enableFirstPartyCookies",
     "checkboxText": "Enable First Party Cookies",
@@ -212,7 +326,23 @@ if (!data.enableFirstPartyCookies) {
   _rdt('disableFirstPartyCookies');
 }
 
-_rdt('track', data.eventType);
+
+var eventMetadata = {
+  currency: data.currency,
+  value: data.transactionValue,
+};
+
+// Certain events don't support certain params, so we conditionally set them
+if (data.eventType != "AddToCart" && data.eventType != "AddToWishlist") {
+  eventMetadata.transactionId = data.transactionId;
+}
+
+if (data.eventType != "SignUp" && data.eventType != "Lead") {
+  eventMetadata.itemCount = data.itemCount;
+}
+
+_rdt('track', data.eventType, eventMetadata);
+
 injectScript('https://www.redditstatic.com/ads/pixel.js', data.gtmOnSuccess, data.gtmOnFailure, 'rdtPixel');
 
 
@@ -629,6 +759,100 @@ scenarios:
 
     // Verify that the tag finished successfully.
     assertApi('makeTableMap').wasCalledWith(mockData.advancedMatchingParams, 'name', 'value');
+    assertApi('gtmOnSuccess').wasCalled();
+- name: Test Event Metadata Purchase
+  code: |-
+    mockData = {
+      id: "t2_potato",
+      eventType: "Purchase",
+      enableFirstPartyCookies: true,
+      itemCount: 1,
+      transactionValue: 1000,
+      currency: "USD",
+      transactionId: "123456789",
+    };
+
+    const expected = {
+      itemCount: 1,
+      value: 1000,
+      currency: 'USD',
+      transactionId: '123456789'
+    };
+
+    mock('copyFromWindow', key => {
+      if (key === 'rdt') return function() {
+        if (arguments[0] === 'track') {
+          assertThat(arguments[2], 'Event metadata parameters incorrect').isEqualTo(expected);
+        }
+      };
+    });
+
+    // Call runCode to run the template's code.
+    runCode(mockData);
+
+    // Verify that the tag finished successfully.
+    assertApi('gtmOnSuccess').wasCalled();
+- name: Test Event Metadata TransactionId Omission
+  code: |-
+    mockData = {
+      id: "t2_potato",
+      eventType: "AddToCart",
+      enableFirstPartyCookies: true,
+      itemCount: 1,
+      transactionValue: 1000,
+      currency: "USD",
+      transactionId: "123456789",
+    };
+
+    const expected = {
+      itemCount: 1,
+      value: 1000,
+      currency: 'USD',
+    };
+
+    mock('copyFromWindow', key => {
+      if (key === 'rdt') return function() {
+        if (arguments[0] === 'track') {
+          assertThat(arguments[2], 'Event metadata parameters incorrect').isEqualTo(expected);
+        }
+      };
+    });
+
+    // Call runCode to run the template's code.
+    runCode(mockData);
+
+    // Verify that the tag finished successfully.
+    assertApi('gtmOnSuccess').wasCalled();
+- name: Test Event Metadata ItemCount Omission
+  code: |-
+    mockData = {
+      id: "t2_potato",
+      eventType: "AddToCart",
+      enableFirstPartyCookies: true,
+      itemCount: 1,
+      transactionValue: 1000,
+      currency: "USD",
+      transactionId: "123456789",
+    };
+
+    const expected = {
+      itemCount: 1,
+      value: 1000,
+      currency: 'USD',
+    };
+
+    mock('copyFromWindow', key => {
+      if (key === 'rdt') return function() {
+        if (arguments[0] === 'track') {
+          assertThat(arguments[2], 'Event metadata parameters incorrect').isEqualTo(expected);
+        }
+      };
+    });
+
+    // Call runCode to run the template's code.
+    runCode(mockData);
+
+    // Verify that the tag finished successfully.
     assertApi('gtmOnSuccess').wasCalled();
 - name: Test pixel init - set Advertiser ID and integration type
   code: |-
