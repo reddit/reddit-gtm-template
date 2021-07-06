@@ -251,10 +251,6 @@ ___TEMPLATE_PARAMETERS___
               {
                 "value": "idfa",
                 "displayValue": "IDFA"
-              },
-              {
-                "value": "externalId",
-                "displayValue": "External ID"
               }
             ],
             "isUnique": true,
