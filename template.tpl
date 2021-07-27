@@ -89,12 +89,29 @@ ___TEMPLATE_PARAMETERS___
       {
         "displayValue": "Sign Up",
         "value": "SignUp"
+      },
+      {
+        "value": "Custom",
+        "displayValue": "Custom"
       }
     ],
     "displayName": "Event to Fire",
     "simpleValueType": true,
     "name": "eventType",
     "type": "SELECT"
+  },
+  {
+    "type": "TEXT",
+    "name": "customEventName",
+    "displayName": "CustomEventName",
+    "simpleValueType": true,
+    "enablingConditions": [
+      {
+        "paramName": "eventType",
+        "paramValue": "Custom",
+        "type": "EQUALS"
+      }
+    ]
   },
   {
     "type": "TEXT",
@@ -125,6 +142,11 @@ ___TEMPLATE_PARAMETERS___
       {
         "paramName": "eventType",
         "paramValue": "Lead",
+        "type": "EQUALS"
+      },
+      {
+        "paramName": "eventType",
+        "paramValue": "Custom",
         "type": "EQUALS"
       }
     ],
@@ -160,6 +182,11 @@ ___TEMPLATE_PARAMETERS___
         "paramName": "eventType",
         "paramValue": "Lead",
         "type": "EQUALS"
+      },
+      {
+        "paramName": "eventType",
+        "paramValue": "Custom",
+        "type": "EQUALS"
       }
     ],
     "help": "The transaction value should be reported as the smallest subunit of currency"
@@ -184,6 +211,11 @@ ___TEMPLATE_PARAMETERS___
         "paramName": "eventType",
         "paramValue": "Purchase",
         "type": "EQUALS"
+      },
+      {
+        "paramName": "eventType",
+        "paramValue": "Custom",
+        "type": "EQUALS"
       }
     ]
   },
@@ -206,6 +238,11 @@ ___TEMPLATE_PARAMETERS___
       {
         "paramName": "eventType",
         "paramValue": "Lead",
+        "type": "EQUALS"
+      },
+      {
+        "paramName": "eventType",
+        "paramValue": "Custom",
         "type": "EQUALS"
       }
     ]
@@ -333,12 +370,16 @@ var eventMetadata = {
 };
 
 // Certain events don't support certain params, so we conditionally set them
-if (data.eventType != "AddToCart" && data.eventType != "AddToWishlist") {
+if (data.eventType != "AddToCart" && data.eventType != "AddToWishlist" && data.transactionId) {
   eventMetadata.transactionId = data.transactionId;
 }
 
-if (data.eventType != "SignUp" && data.eventType != "Lead") {
+if (data.eventType != "SignUp" && data.eventType != "Lead" && data.itemCount) {
   eventMetadata.itemCount = data.itemCount;
+}
+
+if (data.eventType == "Custom" && data.customEventName) {
+  eventMetadata.customEventName = data.customEventName;
 }
 
 _rdt('track', data.eventType, eventMetadata);
@@ -875,6 +916,72 @@ scenarios:
       if (key === 'rdt') return function() {
         if (arguments[0] === 'track') {
           assertThat(arguments[1], 'Incorrect Tracking Event Type').isEqualTo(mockData.eventType);
+        }
+      };
+    });
+
+    // Call runCode to run the template's code.
+    runCode(mockData);
+
+    // Verify that the tag finished successfully.
+    assertApi('gtmOnSuccess').wasCalled();
+- name: Test Custom Event
+  code: |-
+    mockData = {
+      id: "t2_potato",
+      eventType: "Custom",
+      enableFirstPartyCookies: true,
+      itemCount: 1,
+      transactionValue: 1000,
+      currency: "USD",
+      transactionId: "123456789",
+      customEventName: "Subscribe",
+    };
+
+    const expected = {
+      itemCount: 1,
+      value: 1000,
+      currency: 'USD',
+      transactionId: "123456789",
+      customEventName: "Subscribe",
+    };
+
+    mock('copyFromWindow', key => {
+      if (key === 'rdt') return function() {
+        if (arguments[0] === 'track') {
+          assertThat(arguments[2], 'Event metadata parameters incorrect').isEqualTo(expected);
+        }
+      };
+    });
+
+    // Call runCode to run the template's code.
+    runCode(mockData);
+
+    // Verify that the tag finished successfully.
+    assertApi('gtmOnSuccess').wasCalled();
+- name: Test Custom Event Name Omission
+  code: |-
+    mockData = {
+      id: "t2_potato",
+      eventType: "AddToCart",
+      enableFirstPartyCookies: true,
+      itemCount: 1,
+      transactionValue: 1000,
+      currency: "USD",
+      transactionId: "123456789",
+      customEventName: "Subscribe",
+    };
+
+    const expected = {
+      itemCount: 1,
+      value: 1000,
+      currency: 'USD',
+    };
+
+    mock('copyFromWindow', key => {
+      if (key === 'rdt') return function() {
+        if (arguments[0] === 'track') {
+          assertThat(arguments[2], 'Event metadata parameters incorrect').isEqualTo(expected);
         }
       };
     });
