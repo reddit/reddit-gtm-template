@@ -370,11 +370,11 @@ var eventMetadata = {
 };
 
 // Certain events don't support certain params, so we conditionally set them
-if (data.eventType != "AddToCart" && data.eventType != "AddToWishlist" && data.transactionId) {
+if (data.eventType != "AddToCart" && data.eventType != "AddToWishlist") {
   eventMetadata.transactionId = data.transactionId;
 }
 
-if (data.eventType != "SignUp" && data.eventType != "Lead" && data.itemCount) {
+if (data.eventType != "SignUp" && data.eventType != "Lead") {
   eventMetadata.itemCount = data.itemCount;
 }
 
