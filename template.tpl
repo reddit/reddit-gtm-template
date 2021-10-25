@@ -189,7 +189,7 @@ ___TEMPLATE_PARAMETERS___
         "type": "EQUALS"
       }
     ],
-    "help": "The transaction value should be reported as the smallest subunit of currency"
+    "help": "The value of the transaction as a decimal value of currency.  For example, a value of $10.99 USD should be entered as \"10.99\"."
   },
   {
     "type": "TEXT",
@@ -353,6 +353,7 @@ var getRdt = function() {
 var initData = data.advancedMatchingParams && data.advancedMatchingParams.length ? makeTableMap(data.advancedMatchingParams, 'name', 'value') : {};
 
 initData.integration = 'gtm';
+initData.useDecimalCurrencyValues = true;
 
 var _rdt = getRdt();
 if (!_rdt.advertiserId) {
@@ -781,6 +782,7 @@ scenarios:
     };
 
     const expected = {
+      useDecimalCurrencyValues: true,
       email: 'alice@example.com',
       aaid: 'cdda802e-fb9c-47ad-9866-0794d394c912',
       idfa: 'EA7583CD-A667-48BC-B806-42ECB2B48606',
@@ -901,7 +903,7 @@ scenarios:
       if (key === 'rdt') return function() {
         if (arguments[0] === 'init') {
           assertThat(arguments[1], 'Incorrect Advertiser ID').isEqualTo(mockData.id);
-          assertThat(arguments[2], 'Integration type not set').isEqualTo({integration: 'gtm'});
+          assertThat(arguments[2].integration, 'Integration type not set').isEqualTo('gtm');
         }
       };
     });
