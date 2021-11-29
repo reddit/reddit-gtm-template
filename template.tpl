@@ -30,7 +30,7 @@ ___TEMPLATE_PARAMETERS___
 
 [
   {
-    "help": "You can find your advertiser ID at http://ads.reddit.com/conversions#gtm",
+    "help": "You can find your advertiser ID at \u003ca href\u003d\"http://ads.reddit.com/conversions#gtm\"\u003ehttp://ads.reddit.com/conversions#gtm\u003c/a\u003e",
     "valueValidators": [
       {
         "type": "NON_EMPTY"
@@ -102,6 +102,71 @@ ___TEMPLATE_PARAMETERS___
     "checkboxText": "Enable First Party Cookies",
     "simpleValueType": true,
     "defaultValue": true
+  },
+  {
+    "type": "CHECKBOX",
+    "name": "advancedMatching",
+    "checkboxText": "Enable Advanced Matching",
+    "simpleValueType": true
+  },
+  {
+    "type": "GROUP",
+    "name": "advancedMatchingGroup",
+    "displayName": "Advanced Matching Parameters",
+    "groupStyle": "ZIPPY_OPEN",
+    "subParams": [
+      {
+        "type": "SIMPLE_TABLE",
+        "name": "advancedMatchingParams",
+        "displayName": "",
+        "simpleTableColumns": [
+          {
+            "defaultValue": "",
+            "displayName": "Parameter Name",
+            "name": "name",
+            "type": "SELECT",
+            "selectItems": [
+              {
+                "value": "email",
+                "displayValue": "Email"
+              },
+              {
+                "value": "aaid",
+                "displayValue": "AAID"
+              },
+              {
+                "value": "idfa",
+                "displayValue": "IDFA"
+              },
+              {
+                "value": "externalId",
+                "displayValue": "External ID"
+              }
+            ],
+            "isUnique": true,
+            "macrosInSelect": false
+          },
+          {
+            "defaultValue": "",
+            "displayName": "Parameter Value",
+            "name": "value",
+            "type": "TEXT",
+            "valueValidators": [
+              {
+                "type": "NON_EMPTY"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "enablingConditions": [
+      {
+        "paramName": "advancedMatching",
+        "paramValue": true,
+        "type": "EQUALS"
+      }
+    ]
   }
 ]
 
@@ -113,6 +178,7 @@ var copyFromWindow = require('copyFromWindow');
 var setInWindow = require('setInWindow');
 var callInWindow = require('callInWindow');
 var createQueue = require('createQueue');
+var makeTableMap = require('makeTableMap');
 
 var getRdt = function() {
   var _rdt = copyFromWindow('rdt');
@@ -133,9 +199,13 @@ var getRdt = function() {
   return copyFromWindow('rdt');
 };
 
+var initData = data.advancedMatchingParams && data.advancedMatchingParams.length ? makeTableMap(data.advancedMatchingParams, 'name', 'value') : {};
+
+initData.integration = 'gtm';
+
 var _rdt = getRdt();
 if (!_rdt.advertiserId) {
-  _rdt('init', data.id);
+  _rdt('init', data.id, initData);
 }
 
 if (!data.enableFirstPartyCookies) {
@@ -436,11 +506,176 @@ ___WEB_PERMISSIONS___
 
 ___TESTS___
 
-scenarios: []
+scenarios:
+- name: Test injectScript
+  code: |-
+    var success, failure;
+    mock('injectScript', (url, onSuccess, onFailure) => {
+      success = onSuccess;
+      failure = onFailure;
+      assertThat(url).isEqualTo('https://www.redditstatic.com/ads/pixel.js');
+      onSuccess();
+    });
+
+
+    // Call runCode to run the template's code.
+    runCode(mockData);
+
+    // Verify that the tag finished successfully.
+    assertApi('injectScript').wasCalledWith(url, success, failure, 'rdtPixel');
+    assertApi('gtmOnSuccess').wasCalled();
+- name: Test rdt exists
+  code: |
+    mock('copyFromWindow', key => {
+      if (key === 'rdt') return () => {};
+    });
+
+    // Call runCode to run the template's code.
+    runCode(mockData);
+
+    // Verify that the tag finished successfully.
+    assertApi('gtmOnSuccess').wasCalled();
+- name: Test rdt doesn't exist
+  code: |-
+    let rdt;
+
+    mock('copyFromWindow', key => {
+      if (key === 'rdt') return rdt;
+    });
+
+    mock('createQueue', function(name) {
+      assertThat(name).isEqualTo('rdt.callQueue');
+      return function(item) {
+        assertThat(item).isNotNull();
+      };
+    });
+
+    mock('setInWindow', (key, val) => {
+      if (key === 'rdt') rdt = val;
+    });
+
+    // Call runCode to run the template's code.
+    runCode(mockData);
+
+    // Verify that the tag finished successfully.
+    assertApi('setInWindow').wasCalled();
+    assertApi('gtmOnSuccess').wasCalled();
+- name: Test enabledFirstPartyCookies false
+  code: |-
+    mockData.enableFirstPartyCookies = false;
+
+    let isSet = false;
+
+    mock('copyFromWindow', key => {
+      if (key === 'rdt') return function() {
+         if (arguments[0] === 'disableFirstPartyCookies') {
+           isSet = true;
+         }
+      };
+    });
+
+    // Call runCode to run the template's code.
+    runCode(mockData);
+
+    // Verify that the tag finished successfully.
+    assertThat(isSet, 'disableFirstPartyCookies not set even though first party cookies are disabled').isTrue();
+    assertApi('gtmOnSuccess').wasCalled();
+- name: Test enabledFirstPartyCookies true
+  code: |-
+    mockData.enableFirstPartyCookies = true;
+
+    mock('copyFromWindow', key => {
+      if (key === 'rdt') return function() {
+         if (arguments[0] === 'disableFirstPartyCookies') fail('disableFirstPartyCookies called even though first party cookies are enabled');
+      };
+    });
+
+    // Call runCode to run the template's code.
+    runCode(mockData);
+
+    // Verify that the tag finished successfully.
+    assertApi('gtmOnSuccess').wasCalled();
+- name: Test Advanced Matching
+  code: |
+    mockData = {
+      id: "t2_123",
+      event_type: "PageVisit",
+      enableFirstPartyCookies: true,
+      advancedMatching: true,
+      advancedMatchingParams: [
+        {name: 'email', value: 'alice@example.com'},
+        {name: 'aaid', value: 'cdda802e-fb9c-47ad-9866-0794d394c912'},
+        {name: 'idfa', value: 'EA7583CD-A667-48BC-B806-42ECB2B48606'}
+      ],
+    };
+
+    const expected = {
+      email: 'alice@example.com',
+      aaid: 'cdda802e-fb9c-47ad-9866-0794d394c912',
+      idfa: 'EA7583CD-A667-48BC-B806-42ECB2B48606',
+      integration: 'gtm'
+    };
+
+    mock('copyFromWindow', key => {
+      if (key === 'rdt') return function() {
+         if (arguments[0] === 'init') {
+          assertThat(arguments[2], 'Advanced matching parameters incorrect').isEqualTo(expected);
+        }
+      };
+    });
+
+    // Call runCode to run the template's code.
+    runCode(mockData);
+
+    // Verify that the tag finished successfully.
+    assertApi('makeTableMap').wasCalledWith(mockData.advancedMatchingParams, 'name', 'value');
+    assertApi('gtmOnSuccess').wasCalled();
+- name: Test pixel init - set Advertiser ID and integration type
+  code: |-
+    mock('copyFromWindow', key => {
+      if (key === 'rdt') return function() {
+        if (arguments[0] === 'init') {
+          assertThat(arguments[1], 'Incorrect Advertiser ID').isEqualTo(mockData.id);
+          assertThat(arguments[2], 'Integration type not set').isEqualTo({integration: 'gtm'});
+        }
+      };
+    });
+    // Call runCode to run the template's code.
+    runCode(mockData);
+
+    // Verify that the tag finished successfully.
+    assertApi('gtmOnSuccess').wasCalled();
+- name: Test Tracking Event Type
+  code: |-
+    mock('copyFromWindow', key => {
+      if (key === 'rdt') return function() {
+        if (arguments[0] === 'track') {
+          assertThat(arguments[1], 'Incorrect Tracking Event Type').isEqualTo(mockData.eventType);
+        }
+      };
+    });
+
+    // Call runCode to run the template's code.
+    runCode(mockData);
+
+    // Verify that the tag finished successfully.
+    assertApi('gtmOnSuccess').wasCalled();
+setup: |-
+  let mockData = {
+    id: 't2_123',
+    eventType: 'PageVisit',
+    enableFirstPartyCookies: true,
+    advancedMatching: false,
+    advancedMatchingParams: [],
+  };
+
+  const url = 'https://www.redditstatic.com/ads/pixel.js';
+
+  mock('injectScript', (url, onSuccess, onFailure) => {
+    onSuccess();
+  });
 
 
 ___NOTES___
 
 Created on 1/13/2020, 9:31:41 AM
-
-
