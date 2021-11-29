@@ -2,9 +2,11 @@ homepage: "https://www.redditinc.com/advertising"
 documentation: "https://www.reddithelp.com/en/categories/advertising/creating-ads/conversion-pixel#N6"
 versions:
   # Latest Version
+  - sha: 63b171eea243991d1bac1ccb68b9bd40cbea1740
+    changeNotes: This release includes the ability to pass advanced matching parameters such as email addresses, MAIDs, or advertiser-assigned identifiers.
+  # Older versions
   - sha: 45e894256e4fb45a92195fb0e99e81e1208aee33
     changeNotes: If you want to opt out of using first party cookies, you can deselect the box and that will prevent first party cookies from being leveraged. Please note that by using third-party cookies only, your conversion measurement will be limited on our mobile app, Safari, and Firefox browsers.
-  # Older versions
   - sha: 90e5c6eda144b66b84f9ade128e7a315dbe7d182
     changeNotes: Update name to Reddit Pixel.
   - sha: a04640ed8c3fe0abb815b334a995ea81f9e3999b
