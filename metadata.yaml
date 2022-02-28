@@ -2,9 +2,11 @@ homepage: "https://www.redditinc.com/advertising"
 documentation: "https://www.reddithelp.com/en/categories/advertising/creating-ads/conversion-pixel#N6"
 versions:
   # Latest Version
+  - sha: 0a115e6fa658a423fe4d8baaa7fe15f46f158598
+    changeNotes: This release includes the ability to pass event metadata for revenue-related events (currency, value, item count, transaction ID).  It also allows for custom event types with a free-form name.
+  # Older versions
   - sha: 63b171eea243991d1bac1ccb68b9bd40cbea1740
     changeNotes: This release includes the ability to pass advanced matching parameters such as email addresses, MAIDs, or advertiser-assigned identifiers.
-  # Older versions
   - sha: 45e894256e4fb45a92195fb0e99e81e1208aee33
     changeNotes: If you want to opt out of using first party cookies, you can deselect the box and that will prevent first party cookies from being leveraged. Please note that by using third-party cookies only, your conversion measurement will be limited on our mobile app, Safari, and Firefox browsers.
   - sha: 90e5c6eda144b66b84f9ade128e7a315dbe7d182
