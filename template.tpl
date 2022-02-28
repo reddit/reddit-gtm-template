@@ -89,12 +89,29 @@ ___TEMPLATE_PARAMETERS___
       {
         "displayValue": "Sign Up",
         "value": "SignUp"
+      },
+      {
+        "value": "Custom",
+        "displayValue": "Custom"
       }
     ],
     "displayName": "Event to Fire",
     "simpleValueType": true,
     "name": "eventType",
     "type": "SELECT"
+  },
+  {
+    "type": "TEXT",
+    "name": "customEventName",
+    "displayName": "CustomEventName",
+    "simpleValueType": true,
+    "enablingConditions": [
+      {
+        "paramName": "eventType",
+        "paramValue": "Custom",
+        "type": "EQUALS"
+      }
+    ]
   },
   {
     "type": "TEXT",
@@ -125,6 +142,11 @@ ___TEMPLATE_PARAMETERS___
       {
         "paramName": "eventType",
         "paramValue": "Lead",
+        "type": "EQUALS"
+      },
+      {
+        "paramName": "eventType",
+        "paramValue": "Custom",
         "type": "EQUALS"
       }
     ],
@@ -160,9 +182,14 @@ ___TEMPLATE_PARAMETERS___
         "paramName": "eventType",
         "paramValue": "Lead",
         "type": "EQUALS"
+      },
+      {
+        "paramName": "eventType",
+        "paramValue": "Custom",
+        "type": "EQUALS"
       }
     ],
-    "help": "The transaction value should be reported as the smallest subunit of currency"
+    "help": "The value of the transaction as a decimal value of currency.  For example, a value of $10.99 USD should be entered as \"10.99\"."
   },
   {
     "type": "TEXT",
@@ -183,6 +210,11 @@ ___TEMPLATE_PARAMETERS___
       {
         "paramName": "eventType",
         "paramValue": "Purchase",
+        "type": "EQUALS"
+      },
+      {
+        "paramName": "eventType",
+        "paramValue": "Custom",
         "type": "EQUALS"
       }
     ]
@@ -206,6 +238,11 @@ ___TEMPLATE_PARAMETERS___
       {
         "paramName": "eventType",
         "paramValue": "Lead",
+        "type": "EQUALS"
+      },
+      {
+        "paramName": "eventType",
+        "paramValue": "Custom",
         "type": "EQUALS"
       }
     ]
@@ -316,6 +353,7 @@ var getRdt = function() {
 var initData = data.advancedMatchingParams && data.advancedMatchingParams.length ? makeTableMap(data.advancedMatchingParams, 'name', 'value') : {};
 
 initData.integration = 'gtm';
+initData.useDecimalCurrencyValues = true;
 
 var _rdt = getRdt();
 if (!_rdt.advertiserId) {
@@ -339,6 +377,10 @@ if (data.eventType != "AddToCart" && data.eventType != "AddToWishlist") {
 
 if (data.eventType != "SignUp" && data.eventType != "Lead") {
   eventMetadata.itemCount = data.itemCount;
+}
+
+if (data.eventType == "Custom" && data.customEventName) {
+  eventMetadata.customEventName = data.customEventName;
 }
 
 _rdt('track', data.eventType, eventMetadata);
@@ -740,6 +782,7 @@ scenarios:
     };
 
     const expected = {
+      useDecimalCurrencyValues: true,
       email: 'alice@example.com',
       aaid: 'cdda802e-fb9c-47ad-9866-0794d394c912',
       idfa: 'EA7583CD-A667-48BC-B806-42ECB2B48606',
@@ -860,7 +903,7 @@ scenarios:
       if (key === 'rdt') return function() {
         if (arguments[0] === 'init') {
           assertThat(arguments[1], 'Incorrect Advertiser ID').isEqualTo(mockData.id);
-          assertThat(arguments[2], 'Integration type not set').isEqualTo({integration: 'gtm'});
+          assertThat(arguments[2].integration, 'Integration type not set').isEqualTo('gtm');
         }
       };
     });
@@ -875,6 +918,72 @@ scenarios:
       if (key === 'rdt') return function() {
         if (arguments[0] === 'track') {
           assertThat(arguments[1], 'Incorrect Tracking Event Type').isEqualTo(mockData.eventType);
+        }
+      };
+    });
+
+    // Call runCode to run the template's code.
+    runCode(mockData);
+
+    // Verify that the tag finished successfully.
+    assertApi('gtmOnSuccess').wasCalled();
+- name: Test Custom Event
+  code: |-
+    mockData = {
+      id: "t2_potato",
+      eventType: "Custom",
+      enableFirstPartyCookies: true,
+      itemCount: 1,
+      transactionValue: 1000,
+      currency: "USD",
+      transactionId: "123456789",
+      customEventName: "Subscribe",
+    };
+
+    const expected = {
+      itemCount: 1,
+      value: 1000,
+      currency: 'USD',
+      transactionId: "123456789",
+      customEventName: "Subscribe",
+    };
+
+    mock('copyFromWindow', key => {
+      if (key === 'rdt') return function() {
+        if (arguments[0] === 'track') {
+          assertThat(arguments[2], 'Event metadata parameters incorrect').isEqualTo(expected);
+        }
+      };
+    });
+
+    // Call runCode to run the template's code.
+    runCode(mockData);
+
+    // Verify that the tag finished successfully.
+    assertApi('gtmOnSuccess').wasCalled();
+- name: Test Custom Event Name Omission
+  code: |-
+    mockData = {
+      id: "t2_potato",
+      eventType: "AddToCart",
+      enableFirstPartyCookies: true,
+      itemCount: 1,
+      transactionValue: 1000,
+      currency: "USD",
+      transactionId: "123456789",
+      customEventName: "Subscribe",
+    };
+
+    const expected = {
+      itemCount: 1,
+      value: 1000,
+      currency: 'USD',
+    };
+
+    mock('copyFromWindow', key => {
+      if (key === 'rdt') return function() {
+        if (arguments[0] === 'track') {
+          assertThat(arguments[2], 'Event metadata parameters incorrect').isEqualTo(expected);
         }
       };
     });
