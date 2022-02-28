@@ -89,12 +89,163 @@ ___TEMPLATE_PARAMETERS___
       {
         "displayValue": "Sign Up",
         "value": "SignUp"
+      },
+      {
+        "value": "Custom",
+        "displayValue": "Custom"
       }
     ],
     "displayName": "Event to Fire",
     "simpleValueType": true,
     "name": "eventType",
     "type": "SELECT"
+  },
+  {
+    "type": "TEXT",
+    "name": "customEventName",
+    "displayName": "CustomEventName",
+    "simpleValueType": true,
+    "enablingConditions": [
+      {
+        "paramName": "eventType",
+        "paramValue": "Custom",
+        "type": "EQUALS"
+      }
+    ]
+  },
+  {
+    "type": "TEXT",
+    "name": "currency",
+    "displayName": "Currency",
+    "simpleValueType": true,
+    "enablingConditions": [
+      {
+        "paramName": "eventType",
+        "paramValue": "AddToCart",
+        "type": "EQUALS"
+      },
+      {
+        "paramName": "eventType",
+        "paramValue": "AddToWishlist",
+        "type": "EQUALS"
+      },
+      {
+        "paramName": "eventType",
+        "paramValue": "Purchase",
+        "type": "EQUALS"
+      },
+      {
+        "paramName": "eventType",
+        "paramValue": "SignUp",
+        "type": "EQUALS"
+      },
+      {
+        "paramName": "eventType",
+        "paramValue": "Lead",
+        "type": "EQUALS"
+      },
+      {
+        "paramName": "eventType",
+        "paramValue": "Custom",
+        "type": "EQUALS"
+      }
+    ],
+    "help": "Currency should follow the ISO 4217 standard"
+  },
+  {
+    "type": "TEXT",
+    "name": "transactionValue",
+    "displayName": "Transaction Value",
+    "simpleValueType": true,
+    "enablingConditions": [
+      {
+        "paramName": "eventType",
+        "paramValue": "AddToCart",
+        "type": "EQUALS"
+      },
+      {
+        "paramName": "eventType",
+        "paramValue": "AddToWishlist",
+        "type": "EQUALS"
+      },
+      {
+        "paramName": "eventType",
+        "paramValue": "Purchase",
+        "type": "EQUALS"
+      },
+      {
+        "paramName": "eventType",
+        "paramValue": "SignUp",
+        "type": "EQUALS"
+      },
+      {
+        "paramName": "eventType",
+        "paramValue": "Lead",
+        "type": "EQUALS"
+      },
+      {
+        "paramName": "eventType",
+        "paramValue": "Custom",
+        "type": "EQUALS"
+      }
+    ],
+    "help": "The value of the transaction as a decimal value of currency.  For example, a value of $10.99 USD should be entered as \"10.99\"."
+  },
+  {
+    "type": "TEXT",
+    "name": "itemCount",
+    "displayName": "Item Count",
+    "simpleValueType": true,
+    "enablingConditions": [
+      {
+        "paramName": "eventType",
+        "paramValue": "AddToCart",
+        "type": "EQUALS"
+      },
+      {
+        "paramName": "eventType",
+        "paramValue": "AddToWishlist",
+        "type": "EQUALS"
+      },
+      {
+        "paramName": "eventType",
+        "paramValue": "Purchase",
+        "type": "EQUALS"
+      },
+      {
+        "paramName": "eventType",
+        "paramValue": "Custom",
+        "type": "EQUALS"
+      }
+    ]
+  },
+  {
+    "type": "TEXT",
+    "name": "transactionId",
+    "displayName": "Transaction ID",
+    "simpleValueType": true,
+    "enablingConditions": [
+      {
+        "paramName": "eventType",
+        "paramValue": "Purchase",
+        "type": "EQUALS"
+      },
+      {
+        "paramName": "eventType",
+        "paramValue": "SignUp",
+        "type": "EQUALS"
+      },
+      {
+        "paramName": "eventType",
+        "paramValue": "Lead",
+        "type": "EQUALS"
+      },
+      {
+        "paramName": "eventType",
+        "paramValue": "Custom",
+        "type": "EQUALS"
+      }
+    ]
   },
   {
     "type": "CHECKBOX",
@@ -202,6 +353,7 @@ var getRdt = function() {
 var initData = data.advancedMatchingParams && data.advancedMatchingParams.length ? makeTableMap(data.advancedMatchingParams, 'name', 'value') : {};
 
 initData.integration = 'gtm';
+initData.useDecimalCurrencyValues = true;
 
 var _rdt = getRdt();
 if (!_rdt.advertiserId) {
@@ -212,7 +364,27 @@ if (!data.enableFirstPartyCookies) {
   _rdt('disableFirstPartyCookies');
 }
 
-_rdt('track', data.eventType);
+
+var eventMetadata = {
+  currency: data.currency,
+  value: data.transactionValue,
+};
+
+// Certain events don't support certain params, so we conditionally set them
+if (data.eventType != "AddToCart" && data.eventType != "AddToWishlist") {
+  eventMetadata.transactionId = data.transactionId;
+}
+
+if (data.eventType != "SignUp" && data.eventType != "Lead") {
+  eventMetadata.itemCount = data.itemCount;
+}
+
+if (data.eventType == "Custom" && data.customEventName) {
+  eventMetadata.customEventName = data.customEventName;
+}
+
+_rdt('track', data.eventType, eventMetadata);
+
 injectScript('https://www.redditstatic.com/ads/pixel.js', data.gtmOnSuccess, data.gtmOnFailure, 'rdtPixel');
 
 
@@ -610,6 +782,7 @@ scenarios:
     };
 
     const expected = {
+      useDecimalCurrencyValues: true,
       email: 'alice@example.com',
       aaid: 'cdda802e-fb9c-47ad-9866-0794d394c912',
       idfa: 'EA7583CD-A667-48BC-B806-42ECB2B48606',
@@ -630,13 +803,107 @@ scenarios:
     // Verify that the tag finished successfully.
     assertApi('makeTableMap').wasCalledWith(mockData.advancedMatchingParams, 'name', 'value');
     assertApi('gtmOnSuccess').wasCalled();
+- name: Test Event Metadata Purchase
+  code: |-
+    mockData = {
+      id: "t2_potato",
+      eventType: "Purchase",
+      enableFirstPartyCookies: true,
+      itemCount: 1,
+      transactionValue: 1000,
+      currency: "USD",
+      transactionId: "123456789",
+    };
+
+    const expected = {
+      itemCount: 1,
+      value: 1000,
+      currency: 'USD',
+      transactionId: '123456789'
+    };
+
+    mock('copyFromWindow', key => {
+      if (key === 'rdt') return function() {
+        if (arguments[0] === 'track') {
+          assertThat(arguments[2], 'Event metadata parameters incorrect').isEqualTo(expected);
+        }
+      };
+    });
+
+    // Call runCode to run the template's code.
+    runCode(mockData);
+
+    // Verify that the tag finished successfully.
+    assertApi('gtmOnSuccess').wasCalled();
+- name: Test Event Metadata TransactionId Omission
+  code: |-
+    mockData = {
+      id: "t2_potato",
+      eventType: "AddToCart",
+      enableFirstPartyCookies: true,
+      itemCount: 1,
+      transactionValue: 1000,
+      currency: "USD",
+      transactionId: "123456789",
+    };
+
+    const expected = {
+      itemCount: 1,
+      value: 1000,
+      currency: 'USD',
+    };
+
+    mock('copyFromWindow', key => {
+      if (key === 'rdt') return function() {
+        if (arguments[0] === 'track') {
+          assertThat(arguments[2], 'Event metadata parameters incorrect').isEqualTo(expected);
+        }
+      };
+    });
+
+    // Call runCode to run the template's code.
+    runCode(mockData);
+
+    // Verify that the tag finished successfully.
+    assertApi('gtmOnSuccess').wasCalled();
+- name: Test Event Metadata ItemCount Omission
+  code: |-
+    mockData = {
+      id: "t2_potato",
+      eventType: "AddToCart",
+      enableFirstPartyCookies: true,
+      itemCount: 1,
+      transactionValue: 1000,
+      currency: "USD",
+      transactionId: "123456789",
+    };
+
+    const expected = {
+      itemCount: 1,
+      value: 1000,
+      currency: 'USD',
+    };
+
+    mock('copyFromWindow', key => {
+      if (key === 'rdt') return function() {
+        if (arguments[0] === 'track') {
+          assertThat(arguments[2], 'Event metadata parameters incorrect').isEqualTo(expected);
+        }
+      };
+    });
+
+    // Call runCode to run the template's code.
+    runCode(mockData);
+
+    // Verify that the tag finished successfully.
+    assertApi('gtmOnSuccess').wasCalled();
 - name: Test pixel init - set Advertiser ID and integration type
   code: |-
     mock('copyFromWindow', key => {
       if (key === 'rdt') return function() {
         if (arguments[0] === 'init') {
           assertThat(arguments[1], 'Incorrect Advertiser ID').isEqualTo(mockData.id);
-          assertThat(arguments[2], 'Integration type not set').isEqualTo({integration: 'gtm'});
+          assertThat(arguments[2].integration, 'Integration type not set').isEqualTo('gtm');
         }
       };
     });
@@ -651,6 +918,72 @@ scenarios:
       if (key === 'rdt') return function() {
         if (arguments[0] === 'track') {
           assertThat(arguments[1], 'Incorrect Tracking Event Type').isEqualTo(mockData.eventType);
+        }
+      };
+    });
+
+    // Call runCode to run the template's code.
+    runCode(mockData);
+
+    // Verify that the tag finished successfully.
+    assertApi('gtmOnSuccess').wasCalled();
+- name: Test Custom Event
+  code: |-
+    mockData = {
+      id: "t2_potato",
+      eventType: "Custom",
+      enableFirstPartyCookies: true,
+      itemCount: 1,
+      transactionValue: 1000,
+      currency: "USD",
+      transactionId: "123456789",
+      customEventName: "Subscribe",
+    };
+
+    const expected = {
+      itemCount: 1,
+      value: 1000,
+      currency: 'USD',
+      transactionId: "123456789",
+      customEventName: "Subscribe",
+    };
+
+    mock('copyFromWindow', key => {
+      if (key === 'rdt') return function() {
+        if (arguments[0] === 'track') {
+          assertThat(arguments[2], 'Event metadata parameters incorrect').isEqualTo(expected);
+        }
+      };
+    });
+
+    // Call runCode to run the template's code.
+    runCode(mockData);
+
+    // Verify that the tag finished successfully.
+    assertApi('gtmOnSuccess').wasCalled();
+- name: Test Custom Event Name Omission
+  code: |-
+    mockData = {
+      id: "t2_potato",
+      eventType: "AddToCart",
+      enableFirstPartyCookies: true,
+      itemCount: 1,
+      transactionValue: 1000,
+      currency: "USD",
+      transactionId: "123456789",
+      customEventName: "Subscribe",
+    };
+
+    const expected = {
+      itemCount: 1,
+      value: 1000,
+      currency: 'USD',
+    };
+
+    mock('copyFromWindow', key => {
+      if (key === 'rdt') return function() {
+        if (arguments[0] === 'track') {
+          assertThat(arguments[2], 'Event metadata parameters incorrect').isEqualTo(expected);
         }
       };
     });
