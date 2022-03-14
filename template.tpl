@@ -318,6 +318,43 @@ ___TEMPLATE_PARAMETERS___
         "type": "EQUALS"
       }
     ]
+  },
+  {
+    "type": "GROUP",
+    "name": "additionalInformation",
+    "groupStyle": "ZIPPY_CLOSED",
+    "subParams": [
+      {
+        "type": "SIMPLE_TABLE",
+        "name": "products",
+        "displayName": "Product Information",
+        "simpleTableColumns": [
+          {
+            "defaultValue": "",
+            "displayName": "Product ID",
+            "name": "id",
+            "type": "TEXT",
+            "valueHint": ""
+          },
+          {
+            "defaultValue": "",
+            "displayName": "Product Name",
+            "name": "name",
+            "type": "TEXT",
+            "valueHint": ""
+          },
+          {
+            "defaultValue": "",
+            "displayName": "Product Category",
+            "name": "category",
+            "type": "TEXT",
+            "valueHint": ""
+          }
+        ],
+        "help": "Information about the product(s) on this page. Use one row per unique product. The ID and Category are required, but the Name is optional."
+      }
+    ],
+    "displayName": "Additional Information"
   }
 ]
 
@@ -365,17 +402,28 @@ if (!data.enableFirstPartyCookies) {
 }
 
 
-var eventMetadata = {
-  currency: data.currency,
-  value: data.transactionValue,
-};
+var eventMetadata = {};
+
+if (data.currency) {
+  eventMetadata.currency = data.currency;
+}
+
+if (data.transactionValue) {
+  eventMetadata.value = data.transactionValue;
+}
+
+// If there is product information, add it to the eventMetadata. The simple table is
+// of the correct format - an array of objects.
+if (data.products && data.products.length) {
+  eventMetadata.products = data.products;
+}
 
 // Certain events don't support certain params, so we conditionally set them
-if (data.eventType != "AddToCart" && data.eventType != "AddToWishlist") {
+if (data.eventType != "AddToCart" && data.eventType != "AddToWishlist" && data.transactionId) {
   eventMetadata.transactionId = data.transactionId;
 }
 
-if (data.eventType != "SignUp" && data.eventType != "Lead") {
+if (data.eventType != "SignUp" && data.eventType != "Lead" && data.itemCount) {
   eventMetadata.itemCount = data.itemCount;
 }
 
@@ -1008,6 +1056,56 @@ scenarios:
       if (key === 'rdt') return function() {
         if (arguments[0] === 'track') {
           assertThat(arguments[2], 'Event metadata parameters incorrect').isEqualTo(expected);
+        }
+      };
+    });
+
+    // Call runCode to run the template's code.
+    runCode(mockData);
+
+    // Verify that the tag finished successfully.
+    assertApi('gtmOnSuccess').wasCalled();
+- name: Test Products
+  code: |-
+    mockData = {
+      id: "t2_potato",
+      eventType: "AddToCart",
+      enableFirstPartyCookies: true,
+      products: [{'id':'123456789','category':'Food','name':'Carne Asada Burrito'}]
+    };
+
+    const expected = {
+      products: [{'id':'123456789','category':'Food','name':'Carne Asada Burrito'}]
+    };
+
+    mock('copyFromWindow', key => {
+      if (key === 'rdt') return function() {
+        if (arguments[0] === 'track') {
+          assertThat(arguments[2], 'Event metadata product parameters incorrect').isEqualTo(expected);
+        }
+      };
+    });
+
+    // Call runCode to run the template's code.
+    runCode(mockData);
+
+    // Verify that the tag finished successfully.
+    assertApi('gtmOnSuccess').wasCalled();
+- name: Test Empty Products
+  code: |-
+    mockData = {
+      id: "t2_potato",
+      eventType: "AddToCart",
+      enableFirstPartyCookies: true,
+      products: []
+    };
+
+    const expected = {};
+
+    mock('copyFromWindow', key => {
+      if (key === 'rdt') return function() {
+        if (arguments[0] === 'track') {
+          assertThat(arguments[2], 'Event metadata product parameters incorrect').isEqualTo(expected);
         }
       };
     });
