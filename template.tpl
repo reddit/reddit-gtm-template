@@ -351,7 +351,7 @@ ___TEMPLATE_PARAMETERS___
             "valueHint": ""
           }
         ],
-        "help": "Information about the product(s) on this page. Use one row per unique product. The ID and Category are required, but the Name is optional."
+        "help": "Configure product-level information with Reddit. Use one row per unique product. The Product ID and Product Category are required, but the Product Name is optional."
       }
     ],
     "displayName": "Additional Information"
