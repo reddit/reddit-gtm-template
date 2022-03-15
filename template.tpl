@@ -348,8 +348,7 @@ ___TEMPLATE_PARAMETERS___
             "displayName": "Product Category",
             "name": "category",
             "type": "TEXT",
-            "valueHint": "e.g. IAB content taxonomy",
-            "isUnique": false
+            "valueHint": "For example, IAB content taxonomy"
           }
         ],
         "help": "Configure product-level information with Reddit. Use one row per unique product. The Product ID and Product Category are required, but the Product Name is optional."
