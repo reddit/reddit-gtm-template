@@ -334,7 +334,7 @@ ___TEMPLATE_PARAMETERS___
             "displayName": "Product ID",
             "name": "id",
             "type": "TEXT",
-            "valueHint": ""
+            "valueHint": "The item\u0027s ID in the catalog"
           },
           {
             "defaultValue": "",
@@ -348,7 +348,8 @@ ___TEMPLATE_PARAMETERS___
             "displayName": "Product Category",
             "name": "category",
             "type": "TEXT",
-            "valueHint": ""
+            "valueHint": "e.g. IAB content taxonomy",
+            "isUnique": false
           }
         ],
         "help": "Configure product-level information with Reddit. Use one row per unique product. The Product ID and Product Category are required, but the Product Name is optional."
@@ -402,15 +403,10 @@ if (!data.enableFirstPartyCookies) {
 }
 
 
-var eventMetadata = {};
-
-if (data.currency) {
-  eventMetadata.currency = data.currency;
-}
-
-if (data.transactionValue) {
-  eventMetadata.value = data.transactionValue;
-}
+var eventMetadata = {
+  currency: data.currency,
+  value: data.transactionValue,
+};
 
 // If there is product information, add it to the eventMetadata. The simple table is
 // of the correct format - an array of objects.
@@ -419,11 +415,11 @@ if (data.products && data.products.length) {
 }
 
 // Certain events don't support certain params, so we conditionally set them
-if (data.eventType != "AddToCart" && data.eventType != "AddToWishlist" && data.transactionId) {
+if (data.eventType != "AddToCart" && data.eventType != "AddToWishlist") {
   eventMetadata.transactionId = data.transactionId;
 }
 
-if (data.eventType != "SignUp" && data.eventType != "Lead" && data.itemCount) {
+if (data.eventType != "SignUp" && data.eventType != "Lead") {
   eventMetadata.itemCount = data.itemCount;
 }
 
@@ -1075,6 +1071,9 @@ scenarios:
     };
 
     const expected = {
+      currency: undefined,
+      value: undefined,
+      itemCount: undefined,
       products: [{'id':'123456789','category':'Food','name':'Carne Asada Burrito'}]
     };
 
@@ -1100,7 +1099,11 @@ scenarios:
       products: []
     };
 
-    const expected = {};
+    const expected = {
+      currency: undefined,
+      value: undefined,
+      itemCount: undefined,
+    };
 
     mock('copyFromWindow', key => {
       if (key === 'rdt') return function() {
