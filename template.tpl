@@ -321,20 +321,39 @@ ___TEMPLATE_PARAMETERS___
   },
   {
     "type": "GROUP",
-    "name": "additionalInformation",
-    "groupStyle": "ZIPPY_CLOSED",
+    "name": "products",
+    "displayName": "Product Information",
     "subParams": [
       {
+        "type": "RADIO",
+        "name": "productInputType",
+        "displayName": "Input Type",
+        "radioItems": [
+          {
+            "value": "entryManual",
+            "displayValue": "Individual Entry",
+            "help": "Configure product-level information using one row per unique product."
+          },
+          {
+            "value": "entryJSON",
+            "displayValue": "JSON Payload",
+            "help": "Configure product-level information by submitting an array of unique products in JSON format."
+          }
+        ],
+        "simpleValueType": true
+      },
+      {
         "type": "SIMPLE_TABLE",
-        "name": "products",
-        "displayName": "Product Information",
+        "name": "productsRows",
+        "displayName": "Individual Entry",
         "simpleTableColumns": [
           {
             "defaultValue": "",
             "displayName": "Product ID",
             "name": "id",
             "type": "TEXT",
-            "valueHint": "The item\u0027s ID in the catalog"
+            "valueHint": "The item\u0027s ID in the catalog",
+            "isUnique": false
           },
           {
             "defaultValue": "",
@@ -348,13 +367,35 @@ ___TEMPLATE_PARAMETERS___
             "displayName": "Product Category",
             "name": "category",
             "type": "TEXT",
-            "valueHint": "For example, Google's product taxonomy"
+            "valueHint": "For example, Google\u0027s product taxonomy",
+            "isUnique": false
           }
         ],
-        "help": "Configure product-level information with Reddit. Use one row per unique product. The Product ID and Product Category are required, but the Product Name is optional."
+        "help": "The Product ID and Product Category are required, but the Product Name is optional.",
+        "enablingConditions": [
+          {
+            "paramName": "productInputType",
+            "paramValue": "entryManual",
+            "type": "EQUALS"
+          }
+        ]
+      },
+      {
+        "type": "TEXT",
+        "name": "productsJSON",
+        "displayName": "JSON Payload",
+        "simpleValueType": true,
+        "enablingConditions": [
+          {
+            "paramName": "productInputType",
+            "paramValue": "entryJSON",
+            "type": "EQUALS"
+          }
+        ],
+        "help": "The Product ID and Product Category are required, but the Product Name is optional. Format: [ { \"id\": \"Product_ID\", \"name\": \"Product_Name\",  \"category\": \"Product_Category\" }, ... ]"
       }
     ],
-    "displayName": "Additional Information"
+    "groupStyle": "ZIPPY_CLOSED"
   }
 ]
 
@@ -367,6 +408,7 @@ var setInWindow = require('setInWindow');
 var callInWindow = require('callInWindow');
 var createQueue = require('createQueue');
 var makeTableMap = require('makeTableMap');
+var JSON = require('JSON');
 
 var getRdt = function() {
   var _rdt = copyFromWindow('rdt');
@@ -407,10 +449,16 @@ var eventMetadata = {
   value: data.transactionValue,
 };
 
-// If there is product information, add it to the eventMetadata. The simple table is
-// of the correct format - an array of objects.
-if (data.products && data.products.length) {
-  eventMetadata.products = data.products;
+// If there is product information, add it to the eventMetadata.
+if (data.productInputType == "entryManual" && data.productsRows && data.productsRows.length) {
+  // The simple table is of the correct format - an array of objects.
+  // We can assign it directly.
+  eventMetadata.products = data.productsRows;
+} else if (data.productInputType == "entryJSON" && data.productsJSON && data.productsJSON.length) {
+  // The text input should represent JSON. We need to parse it.
+  // If it fails, products simply won't be defined.
+  var products = JSON.parse(data.productsJSON);
+  eventMetadata.products = products;
 }
 
 // Certain events don't support certain params, so we conditionally set them
@@ -707,6 +755,27 @@ ___WEB_PERMISSIONS___
                 ]
               }
             ]
+          }
+        }
+      ]
+    },
+    "clientAnnotations": {
+      "isEditedByUser": true
+    },
+    "isRequired": true
+  },
+  {
+    "instance": {
+      "key": {
+        "publicId": "logging",
+        "versionId": "1"
+      },
+      "param": [
+        {
+          "key": "environments",
+          "value": {
+            "type": 1,
+            "string": "debug"
           }
         }
       ]
@@ -1060,13 +1129,15 @@ scenarios:
 
     // Verify that the tag finished successfully.
     assertApi('gtmOnSuccess').wasCalled();
-- name: Test Products
+- name: Test Products Rows
   code: |-
     mockData = {
       id: "t2_potato",
       eventType: "AddToCart",
       enableFirstPartyCookies: true,
-      products: [{'id':'123456789','category':'Food','name':'Carne Asada Burrito'}]
+      enableProductInformation: true,
+      productInputType: "entryManual",
+      productsRows: [{'id':'123456789','category':'Food','name':'Carne Asada Burrito'}]
     };
 
     const expected = {
@@ -1089,19 +1160,113 @@ scenarios:
 
     // Verify that the tag finished successfully.
     assertApi('gtmOnSuccess').wasCalled();
-- name: Test Empty Products
+- name: Test Products Empty Rows
   code: |-
     mockData = {
       id: "t2_potato",
       eventType: "AddToCart",
       enableFirstPartyCookies: true,
-      products: []
+      enableProductInformation: true,
+      productInputType: "entryManual",
+      productsRows: []
     };
 
     const expected = {
       currency: undefined,
       value: undefined,
       itemCount: undefined,
+    };
+
+    mock('copyFromWindow', key => {
+      if (key === 'rdt') return function() {
+        if (arguments[0] === 'track') {
+          assertThat(arguments[2], 'Event metadata product parameters incorrect').isEqualTo(expected);
+        }
+      };
+    });
+
+    // Call runCode to run the template's code.
+    runCode(mockData);
+
+    // Verify that the tag finished successfully.
+    assertApi('gtmOnSuccess').wasCalled();
+- name: Test Products Mismatched Inputs
+  code: |-
+    mockData = {
+      id: "t2_potato",
+      eventType: "AddToCart",
+      enableFirstPartyCookies: true,
+      enableProductInformation: true,
+      productInputType: "entryJSON",
+      productsRows: []
+    };
+
+    const expected = {
+      currency: undefined,
+      value: undefined,
+      itemCount: undefined,
+    };
+
+    mock('copyFromWindow', key => {
+      if (key === 'rdt') return function() {
+        if (arguments[0] === 'track') {
+          assertThat(arguments[2], 'Event metadata product parameters incorrect').isEqualTo(expected);
+        }
+      };
+    });
+
+    // Call runCode to run the template's code.
+    runCode(mockData);
+
+    // Verify that the tag finished successfully.
+    assertApi('gtmOnSuccess').wasCalled();
+- name: Test Products JSON
+  code: |-
+    mockData = {
+      id: "t2_potato",
+      eventType: "AddToCart",
+      enableFirstPartyCookies: true,
+      enableProductInformation: true,
+      productInputType: "entryJSON",
+      productsJSON: '[{"id":"123456789","category":"Food","name":"Carne Asada Burrito"}]',
+    };
+
+    const expected = {
+      currency: undefined,
+      value: undefined,
+      itemCount: undefined,
+      products: [{'id':'123456789','category':'Food','name':'Carne Asada Burrito'}]
+    };
+
+    mock('copyFromWindow', key => {
+      if (key === 'rdt') return function() {
+        if (arguments[0] === 'track') {
+          assertThat(arguments[2], 'Event metadata product parameters incorrect').isEqualTo(expected);
+        }
+      };
+    });
+
+    // Call runCode to run the template's code.
+    runCode(mockData);
+
+    // Verify that the tag finished successfully.
+    assertApi('gtmOnSuccess').wasCalled();
+- name: Test Products Bad JSON
+  code: |-
+    mockData = {
+      id: "t2_potato",
+      eventType: "AddToCart",
+      enableFirstPartyCookies: true,
+      enableProductInformation: true,
+      productInputType: "entryJSON",
+      productsJSON: '[{"id":"123456789,"category":"Food","name":"Carne Asada Burrito"}]',
+    };
+
+    const expected = {
+      currency: undefined,
+      value: undefined,
+      itemCount: undefined,
+      products: undefined,
     };
 
     mock('copyFromWindow', key => {
