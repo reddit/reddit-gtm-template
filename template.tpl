@@ -455,10 +455,9 @@ if (data.productInputType == "entryManual" && data.productsRows && data.products
   // We can assign it directly.
   eventMetadata.products = data.productsRows;
 } else if (data.productInputType == "entryJSON" && data.productsJSON && data.productsJSON.length) {
-  // The text input should represent JSON. We need to parse it.
-  // If it fails, products simply won't be defined.
-  var products = JSON.parse(data.productsJSON);
-  eventMetadata.products = products;
+  // The text input should be stringified JSON. The Pixel handles validation/normalization.
+  // We can assign it directly.
+  eventMetadata.products = data.productsJSON;
 }
 
 // Certain events don't support certain params, so we conditionally set them
@@ -755,27 +754,6 @@ ___WEB_PERMISSIONS___
                 ]
               }
             ]
-          }
-        }
-      ]
-    },
-    "clientAnnotations": {
-      "isEditedByUser": true
-    },
-    "isRequired": true
-  },
-  {
-    "instance": {
-      "key": {
-        "publicId": "logging",
-        "versionId": "1"
-      },
-      "param": [
-        {
-          "key": "environments",
-          "value": {
-            "type": 1,
-            "string": "debug"
           }
         }
       ]
@@ -1235,38 +1213,7 @@ scenarios:
       currency: undefined,
       value: undefined,
       itemCount: undefined,
-      products: [{'id':'123456789','category':'Food','name':'Carne Asada Burrito'}]
-    };
-
-    mock('copyFromWindow', key => {
-      if (key === 'rdt') return function() {
-        if (arguments[0] === 'track') {
-          assertThat(arguments[2], 'Event metadata product parameters incorrect').isEqualTo(expected);
-        }
-      };
-    });
-
-    // Call runCode to run the template's code.
-    runCode(mockData);
-
-    // Verify that the tag finished successfully.
-    assertApi('gtmOnSuccess').wasCalled();
-- name: Test Products Bad JSON
-  code: |-
-    mockData = {
-      id: "t2_potato",
-      eventType: "AddToCart",
-      enableFirstPartyCookies: true,
-      enableProductInformation: true,
-      productInputType: "entryJSON",
-      productsJSON: '[{"id":"123456789,"category":"Food","name":"Carne Asada Burrito"}]',
-    };
-
-    const expected = {
-      currency: undefined,
-      value: undefined,
-      itemCount: undefined,
-      products: undefined,
+      products: '[{"id":"123456789","category":"Food","name":"Carne Asada Burrito"}]'
     };
 
     mock('copyFromWindow', key => {
