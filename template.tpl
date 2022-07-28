@@ -1,4 +1,4 @@
-___TERMS_OF_SERVICE___
+﻿___TERMS_OF_SERVICE___
 
 By creating or modifying this file you agree to Google Tag Manager's Community
 Template Gallery Developer Terms of Service available at
@@ -30,7 +30,7 @@ ___TEMPLATE_PARAMETERS___
 
 [
   {
-    "help": "You can find your advertiser ID at \u003ca href\u003d\"http://ads.reddit.com/conversions#gtm\"\u003ehttp://ads.reddit.com/conversions#gtm\u003c/a\u003e",
+    "help": "You can find your ad account ID at \u003ca href\u003d\"http://ads.reddit.com/conversions#gtm\"\u003ehttp://ads.reddit.com/conversions#gtm\u003c/a\u003e",
     "valueValidators": [
       {
         "type": "NON_EMPTY"
@@ -41,19 +41,12 @@ ___TEMPLATE_PARAMETERS___
           100
         ],
         "type": "STRING_LENGTH"
-      },
-      {
-        "args": [
-          "t2_[a-z0-9]+"
-        ],
-        "type": "REGEX"
       }
     ],
-    "displayName": "Advertiser ID",
+    "displayName": "Ad Account ID",
     "simpleValueType": true,
     "name": "id",
     "type": "TEXT",
-    "valueHint": "t2_*****"
   },
   {
     "macrosInSelect": false,
