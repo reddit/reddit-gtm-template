@@ -46,7 +46,7 @@ ___TEMPLATE_PARAMETERS___
     "displayName": "Ad Account ID",
     "simpleValueType": true,
     "name": "id",
-    "type": "TEXT",
+    "type": "TEXT"
   },
   {
     "macrosInSelect": false,
