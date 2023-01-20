@@ -912,6 +912,30 @@ scenarios:
 
     // Verify that the tag finished successfully.
     assertApi('gtmOnSuccess').wasCalled();
+- name: Test pixel init - set a2_ advertiser ID and integration type
+  code: |-
+    mockData = {
+      id: 'a2_123',
+      eventType: 'PageVisit',
+      enableFirstPartyCookies: true,
+      advancedMatching: false,
+      advancedMatchingParams: [],
+    };
+
+    mock('copyFromWindow', key => {
+      if (key === 'rdt') return function() {
+        if (arguments[0] === 'init') {
+          assertThat(arguments[1], 'Incorrect Advertiser ID').isEqualTo(mockData.id);
+          assertThat(arguments[2].integration, 'Integration type not set').isEqualTo('gtm');
+        }
+      };
+    });
+
+    // Call runCode to run the template's code.
+    runCode(mockData);
+
+    // Verify that the tag finished successfully.
+    assertApi('gtmOnSuccess').wasCalled();
 - name: Test Tracking Event Type
   code: |-
     mock('copyFromWindow', key => {
