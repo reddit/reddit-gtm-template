@@ -41,12 +41,19 @@ ___TEMPLATE_PARAMETERS___
           100
         ],
         "type": "STRING_LENGTH"
+      },
+      {
+        "args": [
+          "(t2_|a2_)[a-z0-9]+"
+        ],
+        "type": "REGEX"
       }
     ],
     "displayName": "Ad Account ID",
     "simpleValueType": true,
     "name": "id",
-    "type": "TEXT"
+    "type": "TEXT",
+    "valueHint": "t2_***** or a2_*****"
   },
   {
     "macrosInSelect": false,
@@ -329,7 +336,7 @@ var getRdt = function() {
   if (_rdt) {
     return _rdt;
   }
-  
+
   var queue;
   setInWindow('rdt', function() {
     var sendEvent = copyFromWindow('rdt.sendEvent');
