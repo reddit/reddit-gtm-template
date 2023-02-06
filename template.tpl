@@ -1,4 +1,4 @@
-___TERMS_OF_SERVICE___
+﻿___TERMS_OF_SERVICE___
 
 By creating or modifying this file you agree to Google Tag Manager's Community
 Template Gallery Developer Terms of Service available at
@@ -30,7 +30,7 @@ ___TEMPLATE_PARAMETERS___
 
 [
   {
-    "help": "You can find your advertiser ID at \u003ca href\u003d\"http://ads.reddit.com/conversions#gtm\"\u003ehttp://ads.reddit.com/conversions#gtm\u003c/a\u003e",
+    "help": "You can find your ad account ID at \u003ca href\u003d\"http://ads.reddit.com/conversions#gtm\"\u003ehttp://ads.reddit.com/conversions#gtm\u003c/a\u003e",
     "valueValidators": [
       {
         "type": "NON_EMPTY"
@@ -44,16 +44,16 @@ ___TEMPLATE_PARAMETERS___
       },
       {
         "args": [
-          "t2_[a-z0-9]+"
+          "(t2_|a2_)[a-z0-9]+"
         ],
         "type": "REGEX"
       }
     ],
-    "displayName": "Advertiser ID",
+    "displayName": "Ad Account ID",
     "simpleValueType": true,
     "name": "id",
     "type": "TEXT",
-    "valueHint": "t2_*****"
+    "valueHint": "t2_***** or a2_*****"
   },
   {
     "macrosInSelect": false,
@@ -336,7 +336,7 @@ var getRdt = function() {
   if (_rdt) {
     return _rdt;
   }
-  
+
   var queue;
   setInWindow('rdt', function() {
     var sendEvent = copyFromWindow('rdt.sendEvent');
@@ -907,6 +907,30 @@ scenarios:
         }
       };
     });
+    // Call runCode to run the template's code.
+    runCode(mockData);
+
+    // Verify that the tag finished successfully.
+    assertApi('gtmOnSuccess').wasCalled();
+- name: Test pixel init - set a2_ advertiser ID and integration type
+  code: |-
+    mockData = {
+      id: 'a2_123',
+      eventType: 'PageVisit',
+      enableFirstPartyCookies: true,
+      advancedMatching: false,
+      advancedMatchingParams: [],
+    };
+
+    mock('copyFromWindow', key => {
+      if (key === 'rdt') return function() {
+        if (arguments[0] === 'init') {
+          assertThat(arguments[1], 'Incorrect Advertiser ID').isEqualTo(mockData.id);
+          assertThat(arguments[2].integration, 'Integration type not set').isEqualTo('gtm');
+        }
+      };
+    });
+
     // Call runCode to run the template's code.
     runCode(mockData);
 
