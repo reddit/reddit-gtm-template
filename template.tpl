@@ -1113,7 +1113,6 @@ scenarios:
       id: "t2_potato",
       eventType: "AddToCart",
       enableFirstPartyCookies: true,
-      enableProductInformation: true,
       productInputType: "entryManual",
       productsRows: [{'id':'123456789','category':'Food','name':'Carne Asada Burrito'}]
     };
@@ -1144,7 +1143,6 @@ scenarios:
       id: "t2_potato",
       eventType: "AddToCart",
       enableFirstPartyCookies: true,
-      enableProductInformation: true,
       productInputType: "entryManual",
       productsRows: []
     };
@@ -1174,7 +1172,6 @@ scenarios:
       id: "t2_potato",
       eventType: "AddToCart",
       enableFirstPartyCookies: true,
-      enableProductInformation: true,
       productInputType: "entryJSON",
       productsRows: []
     };
@@ -1204,7 +1201,6 @@ scenarios:
       id: "t2_potato",
       eventType: "AddToCart",
       enableFirstPartyCookies: true,
-      enableProductInformation: true,
       productInputType: "entryJSON",
       productsJSON: '[{"id":"123456789","category":"Food","name":"Carne Asada Burrito"}]',
     };
