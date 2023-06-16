@@ -248,6 +248,13 @@ ___TEMPLATE_PARAMETERS___
     ]
   },
   {
+    "type": "TEXT",
+    "name": "conversionId",
+    "displayName": "Conversion ID",
+    "simpleValueType": true,
+    "help": "Unique Conversion ID that corresponds to a distinct conversion event. Conversion ID is used for deduplication and prevents the same conversion event from being processed more than once if it is sent multiple times."
+  },
+  {
     "type": "CHECKBOX",
     "name": "enableFirstPartyCookies",
     "checkboxText": "Enable First Party Cookies",
@@ -471,6 +478,10 @@ if (data.eventType != "SignUp" && data.eventType != "Lead") {
 
 if (data.eventType == "Custom" && data.customEventName) {
   eventMetadata.customEventName = data.customEventName;
+}
+
+if (data.conversionId) {
+  eventMetadata.conversionId = data.conversionId;
 }
 
 _rdt('track', data.eventType, eventMetadata);
@@ -1225,6 +1236,35 @@ scenarios:
 
     // Verify that the tag finished successfully.
     assertApi('gtmOnSuccess').wasCalled();
+- name: Test Event Metadata ConversionId
+  code: |-
+    mockData = {
+      id: "t2_potato",
+      eventType: "PageVisit",
+      conversionId: "conversion-id",
+    };
+
+    const expected = {
+      itemCount: undefined,
+      value: undefined,
+      currency: undefined,
+      transactionId: undefined,
+      conversionId: "conversion-id",
+    };
+
+    mock('copyFromWindow', key => {
+      if (key === 'rdt') return function() {
+        if (arguments[0] === 'track') {
+          assertThat(arguments[2], 'Event metadata parameters incorrect').isEqualTo(expected);
+        }
+      };
+    });
+
+    // Call runCode to run the template's code.
+    runCode(mockData);
+
+    // Verify that the tag finished successfully.
+    assertApi('gtmOnSuccess').wasCalled();
 setup: |-
   let mockData = {
     id: 't2_123',
@@ -1244,3 +1284,5 @@ setup: |-
 ___NOTES___
 
 Created on 1/13/2020, 9:31:41 AM
+
+
