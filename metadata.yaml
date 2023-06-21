@@ -2,9 +2,11 @@ homepage: "https://www.redditinc.com/advertising"
 documentation: "https://advertising.reddithelp.com/en/categories/measurement/install-reddit-pixel#googleTM"
 versions:
   # Latest Version
+  - sha: 1441e87c666a9a565407574ec89ffc6ac18fc1c4
+    changeNotes: This release includes support for product-level metadata.
+  # Older versions
   - sha: 99eabd9ee5d52d6bec26be397d93853a35581f29
     changeNotes: This release includes support for ad accounts with a new id format.
-  # Older versions
   - sha: ff5c10db6ca695406b691e6f57777c4cd3d55205
     changeNotes: This release includes the ability to pass event metadata for revenue-related events (currency, value, item count, transaction ID).  It also allows for custom event types with a free-form name.
   - sha: 63b171eea243991d1bac1ccb68b9bd40cbea1740
