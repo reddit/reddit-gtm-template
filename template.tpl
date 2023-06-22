@@ -30,7 +30,7 @@ ___TEMPLATE_PARAMETERS___
 
 [
   {
-    "help": "You can find your ad account ID at \u003ca href\u003d\"http://ads.reddit.com/conversions#gtm\"\u003ehttp://ads.reddit.com/conversions#gtm\u003c/a\u003e",
+    "help": "You can find your ad account ID at \u003ca href\u003d\"https://ads.reddit.com/events-manager#pixel-onboarding/gtm\"\u003ehttps://ads.reddit.com/events-manager#pixel-onboarding/gtm\u003c/a\u003e",
     "valueValidators": [
       {
         "type": "NON_EMPTY"
