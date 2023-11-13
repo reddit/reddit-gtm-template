@@ -30,7 +30,7 @@ ___TEMPLATE_PARAMETERS___
 
 [
   {
-    "help": "You can find your ad account ID at \u003ca href\u003d\"https://ads.reddit.com/events-manager#pixel-onboarding/gtm\"\u003ehttps://ads.reddit.com/events-manager#pixel-onboarding/gtm\u003c/a\u003e",
+    "help": "You can find your pixel ID at \u003ca href\u003d\"https://ads.reddit.com/events-manager#pixel-onboarding/gtm\"\u003ehttps://ads.reddit.com/events-manager#pixel-onboarding/gtm\u003c/a\u003e",
     "valueValidators": [
       {
         "type": "NON_EMPTY"
@@ -49,7 +49,7 @@ ___TEMPLATE_PARAMETERS___
         "type": "REGEX"
       }
     ],
-    "displayName": "Ad Account ID",
+    "displayName": "Pixel ID",
     "simpleValueType": true,
     "name": "id",
     "type": "TEXT",
@@ -515,7 +515,7 @@ if (dataProcessingOptions.region) {
 
 
 var _rdt = getRdt();
-if (!_rdt.advertiserId) {
+if (!_rdt.pixelId) {
   _rdt('init', data.id, initData);
 }
 
@@ -821,7 +821,7 @@ ___WEB_PERMISSIONS___
                 "mapValue": [
                   {
                     "type": 1,
-                    "string": "rdt.advertiserId"
+                    "string": "rdt.pixelId"
                   },
                   {
                     "type": 8,
@@ -1071,12 +1071,12 @@ scenarios:
 
     // Verify that the tag finished successfully.
     assertApi('gtmOnSuccess').wasCalled();
-- name: Test pixel init - set Advertiser ID and integration type
+- name: Test pixel init - set Pixel ID and integration type
   code: |-
     mock('copyFromWindow', key => {
       if (key === 'rdt') return function() {
         if (arguments[0] === 'init') {
-          assertThat(arguments[1], 'Incorrect Advertiser ID').isEqualTo(mockData.id);
+          assertThat(arguments[1], 'Incorrect Pixel ID').isEqualTo(mockData.id);
           assertThat(arguments[2].integration, 'Integration type not set').isEqualTo('gtm');
         }
       };
@@ -1086,7 +1086,7 @@ scenarios:
 
     // Verify that the tag finished successfully.
     assertApi('gtmOnSuccess').wasCalled();
-- name: Test pixel init - set a2_ advertiser ID and integration type
+- name: Test pixel init - set a2_ pixel ID and integration type
   code: |-
     mockData = {
       id: 'a2_123',
@@ -1099,7 +1099,7 @@ scenarios:
     mock('copyFromWindow', key => {
       if (key === 'rdt') return function() {
         if (arguments[0] === 'init') {
-          assertThat(arguments[1], 'Incorrect Advertiser ID').isEqualTo(mockData.id);
+          assertThat(arguments[1], 'Incorrect Pixel ID').isEqualTo(mockData.id);
           assertThat(arguments[2].integration, 'Integration type not set').isEqualTo('gtm');
         }
       };
