@@ -503,10 +503,19 @@ initData.integration = 'gtm';
 initData.useDecimalCurrencyValues = true;
 
 var dataProcessingOptions = data.dataProcessingParams && data.dataProcessingParams.length ? makeTableMap(data.dataProcessingParams, 'name', 'value') : null;
-if (dataProcessingOptions && dataProcessingOptions.mode && dataProcessingOptions.mode !== '') {
-  initData.dpm = dataProcessingOptions.mode;
-  initData.dpcc = dataProcessingOptions.country;
-  initData.dprc = dataProcessingOptions.region;
+if (dataProcessingOptions && dataProcessingOptions.mode && dataProcessingOptions.mode.trim() !== '') {
+  var dpmArray = dataProcessingOptions.mode.split(',');
+  if (dpmArray.length == 1) {
+    initData.dpm = dpmArray[0];
+  } else {
+    initData.dpm = dpmArray;
+  }
+  if (dataProcessingOptions.country) {
+    initData.dpcc = dataProcessingOptions.country.trim();
+  }
+  if (dataProcessingOptions.region) {
+    initData.dprc = dataProcessingOptions.region.trim();
+  }
 }
 
 
@@ -1393,7 +1402,35 @@ scenarios:
     mock('copyFromWindow', key => {
       if (key === 'rdt') return function() {
          if (arguments[0] === 'init') {
-          assertThat(arguments[2], 'Data Processing params incorrect').isEqualTo(expectedWithoutDPO);
+          assertThat(arguments[2], 'Data Processing params should be missing').isEqualTo(expectedWithoutDPO);
+        }
+      };
+    });
+
+    // Call runCode to run the template's code.
+    runCode(mockData);
+
+    // Verify that the tag finished successfully.
+    assertApi('makeTableMap').wasCalledWith(mockData.advancedMatchingParams, 'name', 'value');
+    assertApi('gtmOnSuccess').wasCalled();
+
+    mockData.dataProcessingParams = [
+      {name: 'mode', value: 'LDU,RDP'},
+      {name: 'country', value: 'US'}
+    ];
+    const expectedWithDPOArray = {
+      useDecimalCurrencyValues: true,
+      email: 'alice@example.com',
+      aaid: 'cdda802e-fb9c-47ad-9866-0794d394c912',
+      idfa: 'EA7583CD-A667-48BC-B806-42ECB2B48606',
+      integration: 'gtm',
+      dpm: ['LDU','RDP'],
+      dpcc: 'US'
+    };
+    mock('copyFromWindow', key => {
+      if (key === 'rdt') return function() {
+         if (arguments[0] === 'init') {
+          assertThat(arguments[2], 'Data Processing mode shoul be array').isEqualTo(expectedWithDPOArray);
         }
       };
     });
