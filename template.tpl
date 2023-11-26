@@ -504,12 +504,7 @@ initData.useDecimalCurrencyValues = true;
 
 var dataProcessingOptions = data.dataProcessingParams && data.dataProcessingParams.length ? makeTableMap(data.dataProcessingParams, 'name', 'value') : null;
 if (dataProcessingOptions && dataProcessingOptions.mode && dataProcessingOptions.mode.trim() !== '') {
-  var dpmArray = dataProcessingOptions.mode.split(',');
-  if (dpmArray.length == 1) {
-    initData.dpm = dpmArray[0];
-  } else {
-    initData.dpm = dpmArray;
-  }
+  initData.dpm = dataProcessingOptions.mode.trim();
   if (dataProcessingOptions.country) {
     initData.dpcc = dataProcessingOptions.country.trim();
   }
@@ -1424,7 +1419,7 @@ scenarios:
       aaid: 'cdda802e-fb9c-47ad-9866-0794d394c912',
       idfa: 'EA7583CD-A667-48BC-B806-42ECB2B48606',
       integration: 'gtm',
-      dpm: ['LDU','RDP'],
+      dpm: 'LDU,RDP',
       dpcc: 'US'
     };
     mock('copyFromWindow', key => {
