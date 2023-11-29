@@ -503,13 +503,13 @@ initData.integration = 'gtm';
 initData.useDecimalCurrencyValues = true;
 
 var dataProcessingOptions = data.dataProcessingParams && data.dataProcessingParams.length ? makeTableMap(data.dataProcessingParams, 'name', 'value') : null;
-if (dataProcessingOptions && dataProcessingOptions.mode && dataProcessingOptions.mode.trim() !== '') {
-  initData.dpm = dataProcessingOptions.mode.trim();
+if (dataProcessingOptions && dataProcessingOptions.mode) {
+  initData.dpm = dataProcessingOptions.mode;
   if (dataProcessingOptions.country) {
-    initData.dpcc = dataProcessingOptions.country.trim();
+    initData.dpcc = dataProcessingOptions.country;
   }
   if (dataProcessingOptions.region) {
-    initData.dprc = dataProcessingOptions.region.trim();
+    initData.dprc = dataProcessingOptions.region;
   }
 }
 
