@@ -327,6 +327,67 @@ ___TEMPLATE_PARAMETERS___
     ]
   },
   {
+    "type": "CHECKBOX",
+    "name": "dataProcessingOptions",
+    "checkboxText": "Add Data Processing Options",
+    "simpleValueType": true
+  },
+  {
+    "type": "GROUP",
+    "name": "dataProcessingOptionsGroup",
+    "displayName": "Data Processing Parameters",
+    "groupStyle": "ZIPPY_OPEN",
+    "subParams": [
+      {
+        "type": "SIMPLE_TABLE",
+        "name": "dataProcessingParams",
+        "displayName": "",
+        "simpleTableColumns": [
+          {
+            "defaultValue": "",
+            "displayName": "Parameter Name",
+            "name": "name",
+            "type": "SELECT",
+            "selectItems": [
+              {
+                "value": "mode",
+                "displayValue": "Mode"
+              },
+              {
+                "value": "country",
+                "displayValue": "Country"
+              },
+              {
+                "value": "region",
+                "displayValue": "Region"
+              }
+            ],
+            "isUnique": true,
+            "macrosInSelect": false
+          },
+          {
+            "defaultValue": "",
+            "displayName": "Parameter Value",
+            "name": "value",
+            "type": "TEXT",
+            "valueValidators": [
+              {
+                "type": "NON_EMPTY"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "enablingConditions": [
+      {
+        "paramName": "dataProcessingOptions",
+        "paramValue": true,
+        "type": "EQUALS"
+      }
+    ]
+  },
+  {
     "type": "GROUP",
     "name": "products",
     "displayName": "Product Information",
@@ -440,6 +501,18 @@ var initData = data.advancedMatchingParams && data.advancedMatchingParams.length
 
 initData.integration = 'gtm';
 initData.useDecimalCurrencyValues = true;
+
+var dataProcessingOptions = data.dataProcessingParams && data.dataProcessingParams.length ? makeTableMap(data.dataProcessingParams, 'name', 'value') : {};
+if (dataProcessingOptions && dataProcessingOptions.mode) {
+  initData.dpm = dataProcessingOptions.mode;
+}
+if (dataProcessingOptions.country) {
+  initData.dpcc = dataProcessingOptions.country;
+}
+if (dataProcessingOptions.region) {
+  initData.dprc = dataProcessingOptions.region;
+}
+
 
 var _rdt = getRdt();
 if (!_rdt.advertiserId) {
@@ -1265,6 +1338,79 @@ scenarios:
 
     // Verify that the tag finished successfully.
     assertApi('gtmOnSuccess').wasCalled();
+- name: Test Data Processing Options
+  code: |
+    mockData = {
+      id: "t2_123",
+      event_type: "PageVisit",
+      enableFirstPartyCookies: true,
+      advancedMatching: true,
+      advancedMatchingParams: [
+        {name: 'email', value: 'alice@example.com'},
+        {name: 'aaid', value: 'cdda802e-fb9c-47ad-9866-0794d394c912'},
+        {name: 'idfa', value: 'EA7583CD-A667-48BC-B806-42ECB2B48606'}
+      ],
+      dataProcessingParams: [
+        {name: 'mode', value: 'LDU'},
+        {name: 'country', value: 'US'},
+        {name: 'region', value: 'US_CA'}
+      ]
+    };
+
+    const expected = {
+      useDecimalCurrencyValues: true,
+      email: 'alice@example.com',
+      aaid: 'cdda802e-fb9c-47ad-9866-0794d394c912',
+      idfa: 'EA7583CD-A667-48BC-B806-42ECB2B48606',
+      integration: 'gtm',
+      dpm: 'LDU',
+      dpcc: 'US',
+      dprc: 'US_CA'
+    };
+
+    mock('copyFromWindow', key => {
+      if (key === 'rdt') return function() {
+         if (arguments[0] === 'init') {
+          assertThat(arguments[2], 'Data Processing params incorrect').isEqualTo(expected);
+        }
+      };
+    });
+
+    // Call runCode to run the template's code.
+    runCode(mockData);
+
+    // Verify that the tag finished successfully.
+    assertApi('makeTableMap').wasCalledWith(mockData.advancedMatchingParams, 'name', 'value');
+    assertApi('makeTableMap').wasCalledWith(mockData.dataProcessingParams, 'name', 'value');
+    assertApi('gtmOnSuccess').wasCalled();
+
+    mockData.dataProcessingParams = [
+      {name: 'country', value: 'US'}
+    ];
+    const expectedWithoutDPM = {
+      useDecimalCurrencyValues: true,
+      email: 'alice@example.com',
+      aaid: 'cdda802e-fb9c-47ad-9866-0794d394c912',
+      idfa: 'EA7583CD-A667-48BC-B806-42ECB2B48606',
+      integration: 'gtm',
+      dpcc: 'US'
+    };
+    mock('copyFromWindow', key => {
+      if (key === 'rdt') return function() {
+         if (arguments[0] === 'init') {
+          assertThat(arguments[2], 'Data Processing params are partially filled').isEqualTo(expectedWithoutDPM);
+        }
+      };
+    });
+
+    // Call runCode to run the template's code.
+    runCode(mockData);
+
+    // Verify that the tag finished successfully.
+    assertApi('makeTableMap').wasCalledWith(mockData.advancedMatchingParams, 'name', 'value');
+    assertApi('gtmOnSuccess').wasCalled();
+
+
 setup: |-
   let mockData = {
     id: 't2_123',
