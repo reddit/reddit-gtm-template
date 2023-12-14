@@ -1,5 +1,5 @@
 homepage: "https://www.redditinc.com/advertising"
-documentation: "https://advertising.reddithelp.com/en/categories/measurement/install-reddit-pixel#googleTM"
+documentation: "https://reddit.my.site.com/helpcenter/s/article/Install-the-Reddit-Pixel-on-your-website"
 versions:
   # Latest Version
   - sha: 1c77a3a37d4f38ba422346a87a49b07e67289e55
