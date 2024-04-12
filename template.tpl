@@ -497,7 +497,9 @@ var getRdt = function() {
   return copyFromWindow('rdt');
 };
 
-var initData = data.advancedMatchingParams && data.advancedMatchingParams.length ? makeTableMap(data.advancedMatchingParams, 'name', 'value') : {};
+var eventMetadata = data.advancedMatchingParams && data.advancedMatchingParams.length ? makeTableMap(data.advancedMatchingParams, 'name', 'value') : {};
+// copy advanced matching parameters
+var initData = JSON.parse(JSON.stringify(eventMetadata));
 
 initData.integration = 'gtm';
 initData.useDecimalCurrencyValues = true;
@@ -523,11 +525,8 @@ if (!data.enableFirstPartyCookies) {
   _rdt('disableFirstPartyCookies');
 }
 
-
-var eventMetadata = {
-  currency: data.currency,
-  value: data.transactionValue,
-};
+eventMetadata.currency = data.currency;
+eventMetadata.value = data.transactionValue;
 
 // If there is product information, add it to the eventMetadata.
 if (data.productInputType == "entryManual" && data.productsRows && data.productsRows.length) {
@@ -1409,8 +1408,45 @@ scenarios:
     // Verify that the tag finished successfully.
     assertApi('makeTableMap').wasCalledWith(mockData.advancedMatchingParams, 'name', 'value');
     assertApi('gtmOnSuccess').wasCalled();
+- name: Test Track Advanced Matching Parameters
+  code: |-
+    mockData = {
+      id: "t2_123",
+      event_type: "PageVisit",
+      enableFirstPartyCookies: true,
+      advancedMatching: true,
+      advancedMatchingParams: [
+        {name: 'email', value: 'alice@example.com'},
+        {name: 'aaid', value: 'cdda802e-fb9c-47ad-9866-0794d394c912'},
+        {name: 'idfa', value: 'EA7583CD-A667-48BC-B806-42ECB2B48606'},
+        {name: 'externalId', value: '999-4RE-DDIT'}
+      ],
+    };
 
+    const expected = {
+      itemCount: undefined,
+      value: undefined,
+      currency: undefined,
+      transactionId: undefined,
+      email: 'alice@example.com',
+      aaid: 'cdda802e-fb9c-47ad-9866-0794d394c912',
+      idfa: 'EA7583CD-A667-48BC-B806-42ECB2B48606',
+      externalId: '999-4RE-DDIT',
+    };
 
+    mock('copyFromWindow', key => {
+      if (key === 'rdt') return function() {
+        if (arguments[0] === 'track') {
+          assertThat(arguments[2], 'AdvancedMatching parameters not passed correctly').isEqualTo(expected);
+        }
+      };
+    });
+
+    // Call runCode to run the template's code.
+    runCode(mockData);
+
+    // Verify that the tag finished successfully.
+    assertApi('gtmOnSuccess').wasCalled();
 setup: |-
   let mockData = {
     id: 't2_123',
