@@ -1410,6 +1410,23 @@ scenarios:
     assertApi('gtmOnSuccess').wasCalled();
 - name: Test Track Advanced Matching Parameters
   code: |-
+    let templateExecutionCount = 0;
+
+    mock('copyFromWindow', key => {
+      if (key === 'rdt') return function() {
+        if (arguments[0] === 'init') {
+          templateExecutionCount++;
+          assertThat(arguments[2].email, 'Email should not be set in init').isUndefined();
+          assertThat(arguments[2].aaid, 'AAID should not be set in init').isUndefined();
+          assertThat(arguments[2].idfa, 'IDFA should not be set in init').isUndefined();
+          assertThat(arguments[2].externalId, 'ExternalID should not be set in init').isUndefined();
+        }
+      };
+    });
+    // First call has no advanced matching parameters
+    runCode(mockData);
+    assertApi('gtmOnSuccess').wasCalled();
+
     mockData = {
       id: "t2_123",
       event_type: "PageVisit",
@@ -1437,16 +1454,95 @@ scenarios:
     mock('copyFromWindow', key => {
       if (key === 'rdt') return function() {
         if (arguments[0] === 'track') {
-          assertThat(arguments[2], 'AdvancedMatching parameters not passed correctly').isEqualTo(expected);
+          templateExecutionCount++;
+          assertThat(arguments[2], 'AdvancedMatching parameters not overwriting').isEqualTo(expected);
         }
       };
     });
 
-    // Call runCode to run the template's code.
+    // Second call has advancedMatchingParams set in the data layer
     runCode(mockData);
-
-    // Verify that the tag finished successfully.
     assertApi('gtmOnSuccess').wasCalled();
+
+    assertThat(templateExecutionCount, 'GTM not invoked twice').isEqualTo(2);
+- name: Test Overwrite Advanced Matching Parameters
+  code: |-
+    let templateExecutionCount = 0;
+
+    mockData = {
+      id: "t2_123",
+      event_type: "PageVisit",
+      enableFirstPartyCookies: true,
+      advancedMatching: true,
+      advancedMatchingParams: [
+        {name: 'email', value: 'bob@example.com'},
+        {name: 'aaid', value: '11111111-1111-1111-1111-111111111111'},
+        {name: 'idfa', value: '22222222-2222-2222-2222-222222222222'},
+        {name: 'externalId', value: '222-222-2222'}
+      ],
+    };
+
+    let expected = {
+      itemCount: undefined,
+      value: undefined,
+      currency: undefined,
+      transactionId: undefined,
+      email: 'bob@example.com',
+      aaid: '11111111-1111-1111-1111-111111111111',
+      idfa: '22222222-2222-2222-2222-222222222222',
+      externalId: '222-222-2222',
+    };
+
+    mock('copyFromWindow', key => {
+      if (key === 'rdt') return function() {
+        if (arguments[0] === 'track') {
+          templateExecutionCount++;
+          assertThat(arguments[2], 'AdvancedMatching parameters not set correctly initially').isEqualTo(expected);
+        }
+      };
+    });
+    // First call has advancedMatchingParams set in data layer
+    runCode(mockData);
+    assertApi('gtmOnSuccess').wasCalled();
+
+    mockData = {
+      id: "t2_123",
+      event_type: "PageVisit",
+      enableFirstPartyCookies: true,
+      advancedMatching: true,
+      advancedMatchingParams: [
+        {name: 'email', value: 'alice@example.com'},
+        {name: 'aaid', value: 'cdda802e-fb9c-47ad-9866-0794d394c912'},
+        {name: 'idfa', value: 'EA7583CD-A667-48BC-B806-42ECB2B48606'},
+        {name: 'externalId', value: '999-4RE-DDIT'}
+      ],
+    };
+
+    expected = {
+      itemCount: undefined,
+      value: undefined,
+      currency: undefined,
+      transactionId: undefined,
+      email: 'alice@example.com',
+      aaid: 'cdda802e-fb9c-47ad-9866-0794d394c912',
+      idfa: 'EA7583CD-A667-48BC-B806-42ECB2B48606',
+      externalId: '999-4RE-DDIT',
+    };
+
+    mock('copyFromWindow', key => {
+      if (key === 'rdt') return function() {
+        if (arguments[0] === 'track') {
+          templateExecutionCount++;
+          assertThat(arguments[2], 'AdvancedMatching parameters not overwriting').isEqualTo(expected);
+        }
+      };
+    });
+
+    // Second call has advancedMatchingParams set in the data layer
+    runCode(mockData);
+    assertApi('gtmOnSuccess').wasCalled();
+
+    assertThat(templateExecutionCount, 'GTM not invoked twice').isEqualTo(2);
 setup: |-
   let mockData = {
     id: 't2_123',
