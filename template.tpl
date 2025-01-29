@@ -56,7 +56,7 @@ ___TEMPLATE_PARAMETERS___
     "valueHint": "t2_***** or a2_*****"
   },
   {
-    "macrosInSelect": false,
+    "macrosInSelect": true,
     "selectItems": [
       {
         "displayValue": "Page Visit",
@@ -464,6 +464,12 @@ ___TEMPLATE_PARAMETERS___
       }
     ],
     "groupStyle": "ZIPPY_CLOSED"
+  },
+  {
+    "type": "TEXT",
+    "name": "partner",
+    "displayName": "Integration Partner",
+    "simpleValueType": true
   }
 ]
 
@@ -477,6 +483,7 @@ var callInWindow = require('callInWindow');
 var createQueue = require('createQueue');
 var makeTableMap = require('makeTableMap');
 var JSON = require('JSON');
+var copyFromDataLayer = require("copyFromDataLayer");
 
 var getRdt = function() {
   var _rdt = copyFromWindow('rdt');
@@ -497,14 +504,34 @@ var getRdt = function() {
   return copyFromWindow('rdt');
 };
 
-var eventMetadata = data.advancedMatchingParams && data.advancedMatchingParams.length ? makeTableMap(data.advancedMatchingParams, 'name', 'value') : {};
+// Grabbing data from gtag() implementations
+const eventModel = copyFromDataLayer("eventModel");
+
+// Attempt to get advanced matching parameters from data
+var advancedMatchingParams = data.advancedMatchingParams && data.advancedMatchingParams.length ? data.advancedMatchingParams : null;
+
+// If am parameters not available in data, get from data layer
+if (!advancedMatchingParams) {
+  advancedMatchingParams = copyFromDataLayer("advancedMatchingParams") || (eventModel && eventModel.advancedMatchingParams);
+}
+
+var eventMetadata = advancedMatchingParams && advancedMatchingParams.length ? makeTableMap(advancedMatchingParams, 'name', 'value') : {};
 // copy advanced matching parameters
 var initData = JSON.parse(JSON.stringify(eventMetadata));
 
 initData.integration = 'gtm';
+
+initData.partner = data.partner || copyFromDataLayer("partner") || '';
+
 initData.useDecimalCurrencyValues = true;
 
-var dataProcessingOptions = data.dataProcessingParams && data.dataProcessingParams.length ? makeTableMap(data.dataProcessingParams, 'name', 'value') : {};
+var dataProcessingParams = data.dataProcessingParams && data.dataProcessingParams.length ?  data.dataProcessingParams : null;
+
+if (!dataProcessingParams) {
+  dataProcessingParams = copyFromDataLayer("dataProcessingParams") || (eventModel && eventModel.dataProcessingParams);
+}
+
+var dataProcessingOptions = dataProcessingParams && dataProcessingParams.length ? makeTableMap(dataProcessingParams, 'name', 'value') : {};
 if (dataProcessingOptions && dataProcessingOptions.mode) {
   initData.dpm = dataProcessingOptions.mode;
 }
@@ -521,39 +548,65 @@ if (!_rdt.pixelId) {
   _rdt('init', data.id, initData);
 }
 
-if (!data.enableFirstPartyCookies) {
+const enableFirstPartyCookiesFromDataLayer = copyFromDataLayer("enableFirstPartyCookies");
+var enableFirstPartyCookies = data.enableFirstPartyCookies || enableFirstPartyCookiesFromDataLayer || (eventModel && eventModel.enableFirstPartyCookies);
+if (!enableFirstPartyCookies) {
   _rdt('disableFirstPartyCookies');
 }
 
-eventMetadata.currency = data.currency;
-eventMetadata.value = data.transactionValue;
+const currencyFromDataLayer = copyFromDataLayer("currency");
+eventMetadata.currency = data.currency || currencyFromDataLayer || (eventModel && eventModel.currency);
 
-// If there is product information, add it to the eventMetadata.
-if (data.productInputType == "entryManual" && data.productsRows && data.productsRows.length) {
-  // The simple table is of the correct format - an array of objects.
-  // We can assign it directly.
-  eventMetadata.products = data.productsRows;
-} else if (data.productInputType == "entryJSON" && data.productsJSON && data.productsJSON.length) {
-  // The text input should be stringified JSON. The Pixel handles validation/normalization.
-  // We can assign it directly.
-  eventMetadata.products = data.productsJSON;
+const valueFromDataLayer = copyFromDataLayer("transactionValue");
+eventMetadata.value = data.transactionValue || valueFromDataLayer || (eventModel && eventModel.transactionValue);
+
+
+
+// Try grabbing product metadata from dataLayer
+const productRowsFromDataLayer = copyFromDataLayer("productsRows") || (eventModel && eventModel.productsRows);
+const productJSONFromDataLayer = copyFromDataLayer("productsJSON") || (eventModel && eventModel.productsJSON);
+
+// If product metadata is available in the data layer, use it
+if (productRowsFromDataLayer && productRowsFromDataLayer.length) {
+  eventMetadata.products = productRowsFromDataLayer;
+} else if (productJSONFromDataLayer && productJSONFromDataLayer.length) {
+  eventMetadata.products = productJSONFromDataLayer;
+} else {
+  // If there is no product metadata in the data layer, fall back to checking productInputType
+  if (data.productInputType == "entryManual" && data.productsRows && data.productsRows.length) {
+    // The simple table is of the correct format - an array of objects.
+    // We can assign it directly.
+    eventMetadata.products = data.productsRows;
+  } else if (data.productInputType == "entryJSON" && data.productsJSON && data.productsJSON.length) {
+    // The text input should be stringified JSON. The Pixel handles validation/normalization.
+    // We can assign it directly.
+    eventMetadata.products = data.productsJSON;
+  }
 }
 
 // Certain events don't support certain params, so we conditionally set them
 if (data.eventType != "AddToCart" && data.eventType != "AddToWishlist") {
-  eventMetadata.transactionId = data.transactionId;
+  const transactionIdFromDataLayer = copyFromDataLayer("transactionId");
+  eventMetadata.transactionId = data.transactionId || transactionIdFromDataLayer || (eventModel && eventModel.transactionId);
 }
 
 if (data.eventType != "SignUp" && data.eventType != "Lead") {
-  eventMetadata.itemCount = data.itemCount;
+  const itemCountFromDataLayer = copyFromDataLayer("itemCount");
+  eventMetadata.itemCount = data.itemCount || itemCountFromDataLayer || (eventModel && eventModel.itemCount);
 }
 
-if (data.eventType == "Custom" && data.customEventName) {
-  eventMetadata.customEventName = data.customEventName;
+if (data.eventType == "Custom") {
+  if (data.customEventName) {
+    eventMetadata.customEventName = data.customEventName;
+  } else {
+    eventMetadata.customEventName = copyFromDataLayer("customEventName") || (eventModel && eventModel.customEventName);
+  }
 }
 
 if (data.conversionId) {
   eventMetadata.conversionId = data.conversionId;
+} else {
+  eventMetadata.conversionId = copyFromDataLayer("conversionId") || (eventModel && eventModel.conversionId);
 }
 
 _rdt('track', data.eventType, eventMetadata);
@@ -845,6 +898,27 @@ ___WEB_PERMISSIONS___
       "isEditedByUser": true
     },
     "isRequired": true
+  },
+  {
+    "instance": {
+      "key": {
+        "publicId": "read_data_layer",
+        "versionId": "1"
+      },
+      "param": [
+        {
+          "key": "allowedKeys",
+          "value": {
+            "type": 1,
+            "string": "any"
+          }
+        }
+      ]
+    },
+    "clientAnnotations": {
+      "isEditedByUser": true
+    },
+    "isRequired": true
   }
 ]
 
@@ -959,7 +1033,8 @@ scenarios:
       email: 'alice@example.com',
       aaid: 'cdda802e-fb9c-47ad-9866-0794d394c912',
       idfa: 'EA7583CD-A667-48BC-B806-42ECB2B48606',
-      integration: 'gtm'
+      integration: 'gtm',
+      partner: '',
     };
 
     mock('copyFromWindow', key => {
@@ -989,6 +1064,7 @@ scenarios:
     };
 
     const expected = {
+      conversionId: undefined,
       itemCount: 1,
       value: 1000,
       currency: 'USD',
@@ -1024,6 +1100,7 @@ scenarios:
       itemCount: 1,
       value: 1000,
       currency: 'USD',
+      conversionId: undefined,
     };
 
     mock('copyFromWindow', key => {
@@ -1055,6 +1132,8 @@ scenarios:
       itemCount: 1,
       value: 1000,
       currency: 'USD',
+      conversionId: undefined,
+
     };
 
     mock('copyFromWindow', key => {
@@ -1143,6 +1222,7 @@ scenarios:
       currency: 'USD',
       transactionId: "123456789",
       customEventName: "Subscribe",
+      conversionId: undefined,
     };
 
     mock('copyFromWindow', key => {
@@ -1175,6 +1255,7 @@ scenarios:
       itemCount: 1,
       value: 1000,
       currency: 'USD',
+      conversionId: undefined,
     };
 
     mock('copyFromWindow', key => {
@@ -1204,6 +1285,7 @@ scenarios:
       currency: undefined,
       value: undefined,
       itemCount: undefined,
+      conversionId: undefined,
       products: [{'id':'123456789','category':'Food','name':'Carne Asada Burrito'}]
     };
 
@@ -1234,6 +1316,7 @@ scenarios:
       currency: undefined,
       value: undefined,
       itemCount: undefined,
+      conversionId: undefined,
     };
 
     mock('copyFromWindow', key => {
@@ -1263,6 +1346,7 @@ scenarios:
       currency: undefined,
       value: undefined,
       itemCount: undefined,
+      conversionId: undefined,
     };
 
     mock('copyFromWindow', key => {
@@ -1292,6 +1376,7 @@ scenarios:
       currency: undefined,
       value: undefined,
       itemCount: undefined,
+      conversionId: undefined,
       products: '[{"id":"123456789","category":"Food","name":"Carne Asada Burrito"}]'
     };
 
@@ -1362,6 +1447,7 @@ scenarios:
       aaid: 'cdda802e-fb9c-47ad-9866-0794d394c912',
       idfa: 'EA7583CD-A667-48BC-B806-42ECB2B48606',
       integration: 'gtm',
+      partner: '',
       dpm: 'LDU',
       dpcc: 'US',
       dprc: 'US_CA'
@@ -1391,6 +1477,7 @@ scenarios:
       email: 'alice@example.com',
       aaid: 'cdda802e-fb9c-47ad-9866-0794d394c912',
       idfa: 'EA7583CD-A667-48BC-B806-42ECB2B48606',
+      partner: '',
       integration: 'gtm',
       dpcc: 'US'
     };
@@ -1408,141 +1495,195 @@ scenarios:
     // Verify that the tag finished successfully.
     assertApi('makeTableMap').wasCalledWith(mockData.advancedMatchingParams, 'name', 'value');
     assertApi('gtmOnSuccess').wasCalled();
-- name: Test Track Advanced Matching Parameters
-  code: |-
-    let templateExecutionCount = 0;
-
-    mock('copyFromWindow', key => {
-      if (key === 'rdt') return function() {
-        if (arguments[0] === 'init') {
-          templateExecutionCount++;
-          assertThat(arguments[2].email, 'Email should not be set in init').isUndefined();
-          assertThat(arguments[2].aaid, 'AAID should not be set in init').isUndefined();
-          assertThat(arguments[2].idfa, 'IDFA should not be set in init').isUndefined();
-          assertThat(arguments[2].externalId, 'ExternalID should not be set in init').isUndefined();
-        }
-      };
-    });
-    // First call has no advanced matching parameters
-    runCode(mockData);
-    assertApi('gtmOnSuccess').wasCalled();
-
+- name: Test Partner
+  code: |
     mockData = {
       id: "t2_123",
       event_type: "PageVisit",
       enableFirstPartyCookies: true,
       advancedMatching: true,
+      partner: 'automatic_gtm',
       advancedMatchingParams: [
         {name: 'email', value: 'alice@example.com'},
         {name: 'aaid', value: 'cdda802e-fb9c-47ad-9866-0794d394c912'},
-        {name: 'idfa', value: 'EA7583CD-A667-48BC-B806-42ECB2B48606'},
-        {name: 'externalId', value: '999-4RE-DDIT'}
+        {name: 'idfa', value: 'EA7583CD-A667-48BC-B806-42ECB2B48606'}
       ],
     };
 
     const expected = {
-      itemCount: undefined,
-      value: undefined,
-      currency: undefined,
-      transactionId: undefined,
+      useDecimalCurrencyValues: true,
       email: 'alice@example.com',
       aaid: 'cdda802e-fb9c-47ad-9866-0794d394c912',
       idfa: 'EA7583CD-A667-48BC-B806-42ECB2B48606',
-      externalId: '999-4RE-DDIT',
+      integration: 'gtm',
+      partner: 'automatic_gtm',
     };
+
 
     mock('copyFromWindow', key => {
       if (key === 'rdt') return function() {
-        if (arguments[0] === 'track') {
-          templateExecutionCount++;
-          assertThat(arguments[2], 'AdvancedMatching parameters not overwriting').isEqualTo(expected);
+         if (arguments[0] === 'init') {
+          assertThat(arguments[2], 'Parnter parameter incorrect').isEqualTo(expected);
         }
       };
     });
 
-    // Second call has advancedMatchingParams set in the data layer
+    // Call runCode to run the template's code.
     runCode(mockData);
+
+    // Verify that the tag finished successfully.
+    assertApi('makeTableMap').wasCalledWith(mockData.advancedMatchingParams, 'name', 'value');
     assertApi('gtmOnSuccess').wasCalled();
-
-    assertThat(templateExecutionCount, 'GTM not invoked twice').isEqualTo(2);
-- name: Test Overwrite Advanced Matching Parameters
-  code: |-
-    let templateExecutionCount = 0;
-
+- name: Test Copying from eventModel for gtag()
+  code: |
     mockData = {
-      id: "t2_123",
-      event_type: "PageVisit",
-      enableFirstPartyCookies: true,
-      advancedMatching: true,
-      advancedMatchingParams: [
-        {name: 'email', value: 'bob@example.com'},
-        {name: 'aaid', value: '11111111-1111-1111-1111-111111111111'},
-        {name: 'idfa', value: '22222222-2222-2222-2222-222222222222'},
-        {name: 'externalId', value: '222-222-2222'}
-      ],
+      eventType: "Custom",
+      eventModel: {
+        id: "t2_potato",
+        enableFirstPartyCookies: true,
+        conversionId: "conversion-id",
+        productsJSON: '[{"id":"123456789","category":"Food","name":"Carne Asada Burrito"}]',
+        itemCount: 1,
+        transactionValue: 1000,
+        currency: "USD",
+        transactionId: "123456789",
+        customEventName: "Subscribe",
+        advancedMatching: true,
+        advancedMatchingParams: [
+          {name: 'email', value: 'alice@example.com'},
+          {name: 'aaid', value: 'cdda802e-fb9c-47ad-9866-0794d394c912'},
+          {name: 'idfa', value: 'EA7583CD-A667-48BC-B806-42ECB2B48606'}
+        ],
+        dataProcessingParams: [
+          {name: 'mode', value: 'LDU'},
+          {name: 'country', value: 'US'},
+          {name: 'region', value: 'US_CA'}
+        ]
+      },
     };
 
-    let expected = {
-      itemCount: undefined,
-      value: undefined,
-      currency: undefined,
-      transactionId: undefined,
-      email: 'bob@example.com',
-      aaid: '11111111-1111-1111-1111-111111111111',
-      idfa: '22222222-2222-2222-2222-222222222222',
-      externalId: '222-222-2222',
+    const expectedAdvancedMatchingData = {
+      useDecimalCurrencyValues: true,
+      email: 'alice@example.com',
+      aaid: 'cdda802e-fb9c-47ad-9866-0794d394c912',
+      idfa: 'EA7583CD-A667-48BC-B806-42ECB2B48606',
+      integration: 'gtm',
+      partner: '',
+      dpm: 'LDU',
+      dpcc: 'US',
+      dprc: 'US_CA'
     };
+
+    const expectedMetadata = {
+      conversionId: "conversion-id",
+      value: 1000,
+      currency: "USD",
+      transactionId: "123456789",
+      customEventName: "Subscribe",
+      itemCount: 1,
+      products: '[{"id":"123456789","category":"Food","name":"Carne Asada Burrito"}]'
+    };
+
+    mock('copyFromDataLayer', function(key) {
+      return mockData[key];
+    });
 
     mock('copyFromWindow', key => {
       if (key === 'rdt') return function() {
         if (arguments[0] === 'track') {
-          templateExecutionCount++;
-          assertThat(arguments[2], 'AdvancedMatching parameters not set correctly initially').isEqualTo(expected);
+          assertThat(arguments[2], 'Copied event parameters incorrect').isEqualTo(expectedMetadata);
         }
       };
     });
-    // First call has advancedMatchingParams set in data layer
-    runCode(mockData);
-    assertApi('gtmOnSuccess').wasCalled();
 
+    mock('copyFromWindow', key => {
+      if (key === 'rdt') return function() {
+         if (arguments[0] === 'init') {
+          assertThat(arguments[2], 'Copied advanced matching parameters incorrect').isEqualTo(expectedAdvancedMatchingData);
+        }
+      };
+    });
+
+
+    // Call runCode to run the template's code
+    runCode(mockData);
+
+    // Verify that the tag finished successfully
+    assertApi('gtmOnSuccess').wasCalled();
+- name: Test Copying from dataLayer
+  code: |
     mockData = {
-      id: "t2_123",
-      event_type: "PageVisit",
+      eventType: "Custom",
+      id: "t2_potato",
       enableFirstPartyCookies: true,
+      conversionId: "conversion-id",
+      productsJSON: '[{"id":"123456789","category":"Food","name":"Carne Asada Burrito"}]',
+      itemCount: 1,
+      transactionValue: 1000,
+      currency: "USD",
+      transactionId: "123456789",
+      customEventName: "Subscribe",
       advancedMatching: true,
       advancedMatchingParams: [
         {name: 'email', value: 'alice@example.com'},
         {name: 'aaid', value: 'cdda802e-fb9c-47ad-9866-0794d394c912'},
-        {name: 'idfa', value: 'EA7583CD-A667-48BC-B806-42ECB2B48606'},
-        {name: 'externalId', value: '999-4RE-DDIT'}
+        {name: 'idfa', value: 'EA7583CD-A667-48BC-B806-42ECB2B48606'}
       ],
+      dataProcessingParams: [
+        {name: 'mode', value: 'LDU'},
+        {name: 'country', value: 'US'},
+        {name: 'region', value: 'US_CA'}
+      ]
     };
 
-    expected = {
-      itemCount: undefined,
-      value: undefined,
-      currency: undefined,
-      transactionId: undefined,
+    const expectedAdvancedMatchingData = {
+      useDecimalCurrencyValues: true,
       email: 'alice@example.com',
       aaid: 'cdda802e-fb9c-47ad-9866-0794d394c912',
       idfa: 'EA7583CD-A667-48BC-B806-42ECB2B48606',
-      externalId: '999-4RE-DDIT',
+      integration: 'gtm',
+      partner: '',
+      dpm: 'LDU',
+      dpcc: 'US',
+      dprc: 'US_CA'
     };
+
+    const expectedMetadata = {
+      conversionId: "conversion-id",
+      value: 1000,
+      currency: "USD",
+      transactionId: "123456789",
+      customEventName: "Subscribe",
+      itemCount: 1,
+      products: '[{"id":"123456789","category":"Food","name":"Carne Asada Burrito"}]'
+    };
+
+    mock('copyFromDataLayer', function(key) {
+      return mockData[key];
+    });
 
     mock('copyFromWindow', key => {
       if (key === 'rdt') return function() {
         if (arguments[0] === 'track') {
-          templateExecutionCount++;
-          assertThat(arguments[2], 'AdvancedMatching parameters not overwriting').isEqualTo(expected);
+          assertThat(arguments[2], 'Copied event parameters incorrect').isEqualTo(expectedMetadata);
         }
       };
     });
 
-    // Second call has advancedMatchingParams set in the data layer
-    runCode(mockData);
-    assertApi('gtmOnSuccess').wasCalled();
+    mock('copyFromWindow', key => {
+      if (key === 'rdt') return function() {
+         if (arguments[0] === 'init') {
+          assertThat(arguments[2], 'Copied advanced matching parameters incorrect').isEqualTo(expectedAdvancedMatchingData);
+        }
+      };
+    });
 
-    assertThat(templateExecutionCount, 'GTM not invoked twice').isEqualTo(2);
+
+    // Call runCode to run the template's code
+    runCode(mockData);
+
+    // Verify that the tag finished successfully
+    assertApi('gtmOnSuccess').wasCalled();
 setup: |-
   let mockData = {
     id: 't2_123',
