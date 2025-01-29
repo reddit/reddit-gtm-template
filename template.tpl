@@ -548,19 +548,13 @@ if (!_rdt.pixelId) {
   _rdt('init', data.id, initData);
 }
 
-const enableFirstPartyCookiesFromDataLayer = copyFromDataLayer("enableFirstPartyCookies");
-var enableFirstPartyCookies = data.enableFirstPartyCookies || enableFirstPartyCookiesFromDataLayer || (eventModel && eventModel.enableFirstPartyCookies);
+var enableFirstPartyCookies = data.enableFirstPartyCookies || copyFromDataLayer("enableFirstPartyCookies") || (eventModel && eventModel.enableFirstPartyCookies);
 if (!enableFirstPartyCookies) {
   _rdt('disableFirstPartyCookies');
 }
 
-const currencyFromDataLayer = copyFromDataLayer("currency");
-eventMetadata.currency = data.currency || currencyFromDataLayer || (eventModel && eventModel.currency);
-
-const valueFromDataLayer = copyFromDataLayer("transactionValue");
-eventMetadata.value = data.transactionValue || valueFromDataLayer || (eventModel && eventModel.transactionValue);
-
-
+eventMetadata.currency = data.currency || copyFromDataLayer("currency") || (eventModel && eventModel.currency);
+eventMetadata.value = data.transactionValue || copyFromDataLayer("transactionValue") || (eventModel && eventModel.transactionValue);
 
 // Try grabbing product metadata from dataLayer
 const productRowsFromDataLayer = copyFromDataLayer("productsRows") || (eventModel && eventModel.productsRows);
@@ -586,13 +580,11 @@ if (productRowsFromDataLayer && productRowsFromDataLayer.length) {
 
 // Certain events don't support certain params, so we conditionally set them
 if (data.eventType != "AddToCart" && data.eventType != "AddToWishlist") {
-  const transactionIdFromDataLayer = copyFromDataLayer("transactionId");
-  eventMetadata.transactionId = data.transactionId || transactionIdFromDataLayer || (eventModel && eventModel.transactionId);
+  eventMetadata.transactionId = data.transactionId || copyFromDataLayer("transactionId") || (eventModel && eventModel.transactionId);
 }
 
 if (data.eventType != "SignUp" && data.eventType != "Lead") {
-  const itemCountFromDataLayer = copyFromDataLayer("itemCount");
-  eventMetadata.itemCount = data.itemCount || itemCountFromDataLayer || (eventModel && eventModel.itemCount);
+  eventMetadata.itemCount = data.itemCount || copyFromDataLayer("itemCount") || (eventModel && eventModel.itemCount);
 }
 
 if (data.eventType == "Custom") {
