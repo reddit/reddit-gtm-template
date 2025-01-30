@@ -468,7 +468,6 @@ ___TEMPLATE_PARAMETERS___
   {
     "type": "TEXT",
     "name": "partner",
-    "displayName": "Integration Partner",
     "simpleValueType": true
   }
 ]
