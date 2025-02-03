@@ -2,9 +2,11 @@ homepage: "https://www.redditinc.com/advertising"
 documentation: "https://reddit.my.site.com/helpcenter/s/article/Install-the-Reddit-Pixel-on-your-website#GTM"
 versions:
   # Latest Version
+  - sha: c57452b2b030423ae8106ecb4693e6558c24e671
+    changeNotes: This release updates the template to pull from the data layer and includes support for template variables within the event type.
+    # Older versions
   - sha: 9f63eadfe49c5fc11caa0de1371cc835c6311c72
     changeNotes: This release uses updated data layer values for advanced matching parameters
-    # Older versions
   - sha: 7e693d37e7e656d662acbce9751427a9fb7797b5
     changeNotes: This release changes references of Ad Account ID to Pixel ID.
   - sha: 5a94553314fcd1d515b553dc4e20c10143b1203a
