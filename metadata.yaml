@@ -3,7 +3,7 @@ documentation: "https://reddit.my.site.com/helpcenter/s/article/Install-the-Redd
 versions:
   # Latest Version
   - sha: c57452b2b030423ae8106ecb4693e6558c24e671
-    changeNotes: This release updates the template to pull from the data layer and includes support for template variables for the event type.
+    changeNotes: This release updates the template to pull from the data layer and includes support for template variables within the event type.
     # Older versions
   - sha: 9f63eadfe49c5fc11caa0de1371cc835c6311c72
     changeNotes: This release uses updated data layer values for advanced matching parameters
