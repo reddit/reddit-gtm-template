@@ -289,6 +289,10 @@ ___TEMPLATE_PARAMETERS___
                 "displayValue": "Email"
               },
               {
+                "value": "phoneNumber",
+                "displayValue": "Phone Number"
+              },
+              {
                 "value": "aaid",
                 "displayValue": "AAID"
               },
@@ -1014,6 +1018,7 @@ scenarios:
       advancedMatching: true,
       advancedMatchingParams: [
         {name: 'email', value: 'alice@example.com'},
+        {name: 'phoneNumber', value: '222-333-4444'},
         {name: 'aaid', value: 'cdda802e-fb9c-47ad-9866-0794d394c912'},
         {name: 'idfa', value: 'EA7583CD-A667-48BC-B806-42ECB2B48606'}
       ],
@@ -1022,6 +1027,7 @@ scenarios:
     const expected = {
       useDecimalCurrencyValues: true,
       email: 'alice@example.com',
+      phoneNumber: '222-333-4444',
       aaid: 'cdda802e-fb9c-47ad-9866-0794d394c912',
       idfa: 'EA7583CD-A667-48BC-B806-42ECB2B48606',
       integration: 'gtm',
@@ -1422,6 +1428,7 @@ scenarios:
       advancedMatching: true,
       advancedMatchingParams: [
         {name: 'email', value: 'alice@example.com'},
+        {name: 'phoneNumber', value: '222-333-4444'},
         {name: 'aaid', value: 'cdda802e-fb9c-47ad-9866-0794d394c912'},
         {name: 'idfa', value: 'EA7583CD-A667-48BC-B806-42ECB2B48606'}
       ],
@@ -1435,6 +1442,7 @@ scenarios:
     const expected = {
       useDecimalCurrencyValues: true,
       email: 'alice@example.com',
+      phoneNumber: '222-333-4444',
       aaid: 'cdda802e-fb9c-47ad-9866-0794d394c912',
       idfa: 'EA7583CD-A667-48BC-B806-42ECB2B48606',
       integration: 'gtm',
@@ -1466,6 +1474,7 @@ scenarios:
     const expectedWithoutDPM = {
       useDecimalCurrencyValues: true,
       email: 'alice@example.com',
+      phoneNumber: '222-333-4444',
       aaid: 'cdda802e-fb9c-47ad-9866-0794d394c912',
       idfa: 'EA7583CD-A667-48BC-B806-42ECB2B48606',
       partner: '',
@@ -1496,6 +1505,7 @@ scenarios:
       partner: 'automatic_gtm',
       advancedMatchingParams: [
         {name: 'email', value: 'alice@example.com'},
+        {name: 'phoneNumber', value: '222-333-4444'},
         {name: 'aaid', value: 'cdda802e-fb9c-47ad-9866-0794d394c912'},
         {name: 'idfa', value: 'EA7583CD-A667-48BC-B806-42ECB2B48606'}
       ],
@@ -1504,6 +1514,7 @@ scenarios:
     const expected = {
       useDecimalCurrencyValues: true,
       email: 'alice@example.com',
+      phoneNumber: '222-333-4444',
       aaid: 'cdda802e-fb9c-47ad-9866-0794d394c912',
       idfa: 'EA7583CD-A667-48BC-B806-42ECB2B48606',
       integration: 'gtm',
@@ -1542,6 +1553,7 @@ scenarios:
         advancedMatching: true,
         advancedMatchingParams: [
           {name: 'email', value: 'alice@example.com'},
+          {name: 'phoneNumber', value: '222-333-4444'},
           {name: 'aaid', value: 'cdda802e-fb9c-47ad-9866-0794d394c912'},
           {name: 'idfa', value: 'EA7583CD-A667-48BC-B806-42ECB2B48606'}
         ],
@@ -1556,6 +1568,7 @@ scenarios:
     const expectedAdvancedMatchingData = {
       useDecimalCurrencyValues: true,
       email: 'alice@example.com',
+      phoneNumber: '222-333-4444',
       aaid: 'cdda802e-fb9c-47ad-9866-0794d394c912',
       idfa: 'EA7583CD-A667-48BC-B806-42ECB2B48606',
       integration: 'gtm',
@@ -1617,6 +1630,7 @@ scenarios:
       advancedMatching: true,
       advancedMatchingParams: [
         {name: 'email', value: 'alice@example.com'},
+        {name: 'phoneNumber', value: '222-333-4444'},
         {name: 'aaid', value: 'cdda802e-fb9c-47ad-9866-0794d394c912'},
         {name: 'idfa', value: 'EA7583CD-A667-48BC-B806-42ECB2B48606'}
       ],
@@ -1630,6 +1644,7 @@ scenarios:
     const expectedAdvancedMatchingData = {
       useDecimalCurrencyValues: true,
       email: 'alice@example.com',
+      phoneNumber: '222-333-4444',
       aaid: 'cdda802e-fb9c-47ad-9866-0794d394c912',
       idfa: 'EA7583CD-A667-48BC-B806-42ECB2B48606',
       integration: 'gtm',
