@@ -12,7 +12,7 @@ ___INFO___
   "displayName": "Reddit Pixel",
   "description": "By using the Reddit Conversion Pixel you agree to comply with and to be bound by the Reddit Advertiser Measurement Program Terms\n\nhttps://www.reddithelp.com/en/categories/advertising/policy-guideline",
   "securityGroups": [],
-  "id": "cvt_temp_public_id",
+  "id": "cvt_PBGZL",
   "type": "TAG",
   "version": 1,
   "brand": {
@@ -54,6 +54,13 @@ ___TEMPLATE_PARAMETERS___
     "name": "id",
     "type": "TEXT",
     "valueHint": "t2_***** or a2_*****"
+  },
+  {
+    "type": "TEXT",
+    "name": "partner",
+    "simpleValueType": true,
+    "displayName": "Integration",
+    "help": "This value is created and set by the automatic installation flow"
   },
   {
     "macrosInSelect": true,
@@ -468,11 +475,6 @@ ___TEMPLATE_PARAMETERS___
       }
     ],
     "groupStyle": "ZIPPY_CLOSED"
-  },
-  {
-    "type": "TEXT",
-    "name": "partner",
-    "simpleValueType": true
   }
 ]
 
