@@ -1,10 +1,12 @@
-homepage: "https://www.redditinc.com/advertising"
+ghomepage: "https://www.redditinc.com/advertising"
 documentation: "https://reddit.my.site.com/helpcenter/s/article/Install-the-Reddit-Pixel-on-your-website#GTM"
 versions:
   # Latest Version
+  - sha: 5e47b1bc605050916078800dfe850979369ee246
+    changeNotes: This release updates the UI for the integration parameter.
+  # Older versions
   - sha: df9192c6963870c411661063c5b383cda6ba47e9
     changeNotes: This release includes the ability to pass phone numbers as advanced matching parameters.
-  # Older versions
   - sha: c57452b2b030423ae8106ecb4693e6558c24e671
     changeNotes: This release updates the template to pull from the data layer and includes support for template variables within the event type.
   - sha: 9f63eadfe49c5fc11caa0de1371cc835c6311c72
