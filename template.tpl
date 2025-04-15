@@ -481,33 +481,33 @@ ___TEMPLATE_PARAMETERS___
 
 ___SANDBOXED_JS_FOR_WEB_TEMPLATE___
 
-var injectScript = require("injectScript");
-var copyFromWindow = require("copyFromWindow");
-var setInWindow = require("setInWindow");
-var callInWindow = require("callInWindow");
-var createQueue = require("createQueue");
-var makeTableMap = require("makeTableMap");
-var makeNumber = require("makeNumber");
+var injectScript = require('injectScript');
+var copyFromWindow = require('copyFromWindow');
+var setInWindow = require('setInWindow');
+var callInWindow = require('callInWindow');
+var createQueue = require('createQueue');
+var makeTableMap = require('makeTableMap');
+var makeNumber = require('makeNumber');
 var JSON = require('JSON');
-var copyFromDataLayer = require("copyFromDataLayer");
+var copyFromDataLayer = require('copyFromDataLayer');
 
 var getRdt = function () {
-  var _rdt = copyFromWindow("rdt");
+  var _rdt = copyFromWindow('rdt');
   if (_rdt) {
     return _rdt;
   }
 
   var queue;
-  setInWindow("rdt", function () {
-    var sendEvent = copyFromWindow("rdt.sendEvent");
+  setInWindow('rdt', function () {
+    var sendEvent = copyFromWindow('rdt.sendEvent');
     if (sendEvent) {
-      callInWindow("rdt.sendEvent.apply", _rdt, arguments);
+      callInWindow('rdt.sendEvent.apply', _rdt, arguments);
     } else {
       queue(arguments);
     }
   });
-  queue = createQueue("rdt.callQueue");
-  return copyFromWindow("rdt");
+  queue = createQueue('rdt.callQueue');
+  return copyFromWindow('rdt');
 };
 
 // Grabbing data from gtag() implementations
@@ -540,19 +540,17 @@ if (userData) {
 
 initData.integration = "gtm";
 
-initData.partner = data.partner || copyFromDataLayer("partner") || "";
+initData.partner = data.partner || copyFromDataLayer("partner") || '';
 
 initData.useDecimalCurrencyValues = true;
 
 var dataProcessingParams = data.dataProcessingParams && data.dataProcessingParams.length ? data.dataProcessingParams : null;
 
 if (!dataProcessingParams) {
-  dataProcessingParams =
-    copyFromDataLayer("dataProcessingParams") ||
-    (eventModel && eventModel.dataProcessingParams);
+  dataProcessingParams = copyFromDataLayer("dataProcessingParams") || (eventModel && eventModel.dataProcessingParams);
 }
 
-var dataProcessingOptions = dataProcessingParams && dataProcessingParams.length ? makeTableMap(dataProcessingParams, "name", "value") : {};
+var dataProcessingOptions = dataProcessingParams && dataProcessingParams.length ? makeTableMap(dataProcessingParams, 'name', 'value') : {};
 if (dataProcessingOptions && dataProcessingOptions.mode) {
   initData.dpm = dataProcessingOptions.mode;
 }
@@ -565,15 +563,12 @@ if (dataProcessingOptions.region) {
 
 var _rdt = getRdt();
 if (!_rdt.pixelId) {
-  _rdt("init", data.id, initData);
+  _rdt('init', data.id, initData);
 }
 
-var enableFirstPartyCookies =
-  data.enableFirstPartyCookies ||
-  copyFromDataLayer("enableFirstPartyCookies") ||
-  (eventModel && eventModel.enableFirstPartyCookies);
+var enableFirstPartyCookies = data.enableFirstPartyCookies || copyFromDataLayer("enableFirstPartyCookies") || (eventModel && eventModel.enableFirstPartyCookies);
 if (!enableFirstPartyCookies) {
-  _rdt("disableFirstPartyCookies");
+  _rdt('disableFirstPartyCookies');
 }
 
 if (ecommerce && ecommerce.currency) {
@@ -742,28 +737,19 @@ if (data.eventType == "Custom") {
   if (data.customEventName) {
     eventMetadata.customEventName = data.customEventName;
   } else {
-    eventMetadata.customEventName =
-      copyFromDataLayer("customEventName") ||
-      (eventModel && eventModel.customEventName);
+    eventMetadata.customEventName = copyFromDataLayer("customEventName") || (eventModel && eventModel.customEventName);
   }
 }
 
 if (data.conversionId) {
   eventMetadata.conversionId = data.conversionId;
 } else {
-  eventMetadata.conversionId =
-    copyFromDataLayer("conversionId") ||
-    (eventModel && eventModel.conversionId);
+  eventMetadata.conversionId = copyFromDataLayer("conversionId") || (eventModel && eventModel.conversionId);
 }
 
-_rdt("track", data.eventType, eventMetadata);
+_rdt('track', data.eventType, eventMetadata);
 
-injectScript(
-  "https://www.redditstatic.com/ads/pixel.js",
-  data.gtmOnSuccess,
-  data.gtmOnFailure,
-  "rdtPixel"
-);
+injectScript('https://www.redditstatic.com/ads/pixel.js', data.gtmOnSuccess, data.gtmOnFailure, "rdtPixel");
 
 
 ___WEB_PERMISSIONS___
