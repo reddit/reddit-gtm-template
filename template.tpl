@@ -489,9 +489,9 @@ var createQueue = require('createQueue');
 var makeTableMap = require('makeTableMap');
 var makeNumber = require('makeNumber');
 var JSON = require('JSON');
-var copyFromDataLayer = require('copyFromDataLayer');
+var copyFromDataLayer = require("copyFromDataLayer");
 
-var getRdt = function () {
+var getRdt = function() {
   var _rdt = copyFromWindow('rdt');
   if (_rdt) {
     return _rdt;
@@ -749,7 +749,7 @@ if (data.conversionId) {
 
 _rdt('track', data.eventType, eventMetadata);
 
-injectScript('https://www.redditstatic.com/ads/pixel.js', data.gtmOnSuccess, data.gtmOnFailure, "rdtPixel");
+injectScript('https://www.redditstatic.com/ads/pixel.js', data.gtmOnSuccess, data.gtmOnFailure, 'rdtPixel');
 
 
 ___WEB_PERMISSIONS___
