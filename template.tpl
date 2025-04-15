@@ -481,36 +481,39 @@ ___TEMPLATE_PARAMETERS___
 
 ___SANDBOXED_JS_FOR_WEB_TEMPLATE___
 
-var injectScript = require('injectScript');
-var copyFromWindow = require('copyFromWindow');
-var setInWindow = require('setInWindow');
-var callInWindow = require('callInWindow');
-var createQueue = require('createQueue');
-var makeTableMap = require('makeTableMap');
+var injectScript = require("injectScript");
+var copyFromWindow = require("copyFromWindow");
+var setInWindow = require("setInWindow");
+var callInWindow = require("callInWindow");
+var createQueue = require("createQueue");
+var makeTableMap = require("makeTableMap");
+var makeNumber = require("makeNumber");
 var JSON = require('JSON');
 var copyFromDataLayer = require("copyFromDataLayer");
 
-var getRdt = function() {
-  var _rdt = copyFromWindow('rdt');
+var getRdt = function () {
+  var _rdt = copyFromWindow("rdt");
   if (_rdt) {
     return _rdt;
   }
 
   var queue;
-  setInWindow('rdt', function() {
-    var sendEvent = copyFromWindow('rdt.sendEvent');
+  setInWindow("rdt", function () {
+    var sendEvent = copyFromWindow("rdt.sendEvent");
     if (sendEvent) {
-      callInWindow('rdt.sendEvent.apply', _rdt, arguments);
+      callInWindow("rdt.sendEvent.apply", _rdt, arguments);
     } else {
       queue(arguments);
     }
   });
-  queue = createQueue('rdt.callQueue');
-  return copyFromWindow('rdt');
+  queue = createQueue("rdt.callQueue");
+  return copyFromWindow("rdt");
 };
 
 // Grabbing data from gtag() implementations
 const eventModel = copyFromDataLayer("eventModel");
+const ecommerce = copyFromDataLayer("ecommerce");
+const userData = copyFromDataLayer("user_data");
 
 // Attempt to get advanced matching parameters from data
 var advancedMatchingParams = data.advancedMatchingParams && data.advancedMatchingParams.length ? data.advancedMatchingParams : null;
@@ -524,19 +527,32 @@ var eventMetadata = advancedMatchingParams && advancedMatchingParams.length ? ma
 // copy advanced matching parameters
 var initData = JSON.parse(JSON.stringify(eventMetadata));
 
-initData.integration = 'gtm';
+if (userData) {
+  if (!eventMetadata.email && (userData.sha256_email_address || userData.email_address)) {
+    eventMetadata.email =
+      userData.sha256_email_address || userData.email_address;
+  }
+  if (!eventMetadata.phoneNumber && (userData.sha256_phone_number || userData.phone_number)) {
+    eventMetadata.phoneNumber =
+      userData.sha256_phone_number || userData.phone_number;
+  }
+}
 
-initData.partner = data.partner || copyFromDataLayer("partner") || '';
+initData.integration = "gtm";
+
+initData.partner = data.partner || copyFromDataLayer("partner") || "";
 
 initData.useDecimalCurrencyValues = true;
 
-var dataProcessingParams = data.dataProcessingParams && data.dataProcessingParams.length ?  data.dataProcessingParams : null;
+var dataProcessingParams = data.dataProcessingParams && data.dataProcessingParams.length ? data.dataProcessingParams : null;
 
 if (!dataProcessingParams) {
-  dataProcessingParams = copyFromDataLayer("dataProcessingParams") || (eventModel && eventModel.dataProcessingParams);
+  dataProcessingParams =
+    copyFromDataLayer("dataProcessingParams") ||
+    (eventModel && eventModel.dataProcessingParams);
 }
 
-var dataProcessingOptions = dataProcessingParams && dataProcessingParams.length ? makeTableMap(dataProcessingParams, 'name', 'value') : {};
+var dataProcessingOptions = dataProcessingParams && dataProcessingParams.length ? makeTableMap(dataProcessingParams, "name", "value") : {};
 if (dataProcessingOptions && dataProcessingOptions.mode) {
   initData.dpm = dataProcessingOptions.mode;
 }
@@ -547,68 +563,207 @@ if (dataProcessingOptions.region) {
   initData.dprc = dataProcessingOptions.region;
 }
 
-
 var _rdt = getRdt();
 if (!_rdt.pixelId) {
-  _rdt('init', data.id, initData);
+  _rdt("init", data.id, initData);
 }
 
-var enableFirstPartyCookies = data.enableFirstPartyCookies || copyFromDataLayer("enableFirstPartyCookies") || (eventModel && eventModel.enableFirstPartyCookies);
+var enableFirstPartyCookies =
+  data.enableFirstPartyCookies ||
+  copyFromDataLayer("enableFirstPartyCookies") ||
+  (eventModel && eventModel.enableFirstPartyCookies);
 if (!enableFirstPartyCookies) {
-  _rdt('disableFirstPartyCookies');
+  _rdt("disableFirstPartyCookies");
 }
 
-eventMetadata.currency = data.currency || copyFromDataLayer("currency") || (eventModel && eventModel.currency);
-eventMetadata.value = data.transactionValue || copyFromDataLayer("transactionValue") || (eventModel && eventModel.transactionValue);
-
-// Try grabbing product metadata from dataLayer
-const productRowsFromDataLayer = copyFromDataLayer("productsRows") || (eventModel && eventModel.productsRows);
-const productJSONFromDataLayer = copyFromDataLayer("productsJSON") || (eventModel && eventModel.productsJSON);
-
-// If product metadata is available in the data layer, use it
-if (productRowsFromDataLayer && productRowsFromDataLayer.length) {
-  eventMetadata.products = productRowsFromDataLayer;
-} else if (productJSONFromDataLayer && productJSONFromDataLayer.length) {
-  eventMetadata.products = productJSONFromDataLayer;
+if (ecommerce && ecommerce.currency) {
+  eventMetadata.currency = ecommerce.currency;
 } else {
-  // If there is no product metadata in the data layer, fall back to checking productInputType
-  if (data.productInputType == "entryManual" && data.productsRows && data.productsRows.length) {
-    // The simple table is of the correct format - an array of objects.
-    // We can assign it directly.
-    eventMetadata.products = data.productsRows;
-  } else if (data.productInputType == "entryJSON" && data.productsJSON && data.productsJSON.length) {
-    // The text input should be stringified JSON. The Pixel handles validation/normalization.
-    // We can assign it directly.
-    eventMetadata.products = data.productsJSON;
+  eventMetadata.currency = data.currency || copyFromDataLayer("currency") || (eventModel && eventModel.currency);
+}
+
+if (ecommerce && ecommerce.value !== undefined) {
+  eventMetadata.value = ecommerce.value;
+} else {
+  eventMetadata.value = data.transactionValue || copyFromDataLayer("transactionValue") || (eventModel && eventModel.transactionValue);
+}
+
+var formatCategories = function (item) {
+  var categories = [];
+  var categoryLevels = ["item_category", "item_category2", "item_category3", "item_category4", "item_category5"];
+  
+  for(var i = 0; i < categoryLevels.length; i++) {
+    var key = categoryLevels[i];
+    if(item[key]) {
+      var value = item[key].trim();
+      if (value !== "") {
+        categories.push(value);
+      }
+    }
+  }
+  
+  return categories.length > 0 ? categories.join(" > ") : null;
+};
+
+var processEcommerceItems = function () {
+  var itemsToProcess =
+    (ecommerce && ecommerce.items) || (eventModel && eventModel.items);
+
+  // Process GA items ONLY if the array exists and is not empty
+  if (itemsToProcess && itemsToProcess.length > 0) {
+    var processedProducts = [];
+    var processedItemCount = 0;
+    for (var i = 0; i < itemsToProcess.length; i++) {
+      var item = itemsToProcess[i];
+      if (!item) continue;
+
+      var product = {};
+
+      if (item.item_id) product.id = item.item_id;
+      if (item.item_name) product.name = item.item_name;
+
+      var itemCategory = formatCategories(item);
+      if (itemCategory) product.category = itemCategory;
+
+      var quantity = 1;
+      if (item.quantity !== undefined && item.quantity !== null) {
+        var parsedQuantity = makeNumber(item.quantity);
+        quantity = parsedQuantity;
+      }
+
+      processedItemCount += quantity;
+      processedProducts.push(product);
+    }
+    if (processedProducts.length > 0) {
+      return {
+        products: processedProducts,
+        itemCount: processedItemCount,
+        foundItems: true,
+      };
+    }
+  }
+  // Return default if no items found, array was empty, or no valid products resulted
+  return { products: [], itemCount: 0, foundItems: false };
+};
+
+var getProductData = function () {
+  var productData = null;
+  var itemCountData = null;
+
+  // Helper to get itemCount
+  var getItemCount = function () {
+    return (
+      data.itemCount ||
+      copyFromDataLayer("itemCount") ||
+      (eventModel && eventModel.itemCount) ||
+      null
+    );
+  };
+
+  // Try grabbing product metadata from dataLayer
+  const productRowsFromDataLayer =
+    copyFromDataLayer("productsRows") ||
+    (eventModel && eventModel.productsRows);
+  const productJSONFromDataLayer =
+    copyFromDataLayer("productsJSON") ||
+    (eventModel && eventModel.productsJSON);
+
+  if (productRowsFromDataLayer && productRowsFromDataLayer.length > 0) {
+    productData = productRowsFromDataLayer;
+    itemCountData = getItemCount();
+  } else if (productJSONFromDataLayer && productJSONFromDataLayer.length > 0) {
+    productData = productJSONFromDataLayer;
+    itemCountData = getItemCount();
+  }
+  // If there is no product metadata in the top-level data layer, check for the ecommerce object
+  else {
+    var ecommerceResult = processEcommerceItems();
+    if (ecommerceResult.foundItems) {
+      productData = ecommerceResult.products;
+      itemCountData = ecommerceResult.itemCount;
+    }
+  }
+
+  if (productData === null) {
+    // If there is no product metadata in the top-level data layer, fall back to checking productInputType
+    if (
+      data.productInputType == "entryManual" &&
+      data.productsRows &&
+      data.productsRows.length > 0
+    ) {
+      // The simple table is of the correct format - an array of objects.
+      // We can assign it directly.
+      productData = data.productsRows;
+      if (itemCountData === null) itemCountData = getItemCount();
+    } else if (
+      data.productInputType == "entryJSON" &&
+      data.productsJSON &&
+      data.productsJSON.length > 0
+    ) {
+      productData = data.productsJSON;
+      if (itemCountData === null) itemCountData = getItemCount();
+    }
+  }
+  
+  if (productData === null && itemCountData === null) {
+    itemCountData = getItemCount(); 
+  }
+
+  return { products: productData, itemCount: itemCountData };
+};
+
+var productInfo = getProductData();
+var products = productInfo.products;
+var itemCount = productInfo.itemCount;
+
+if (products !== null) {
+  eventMetadata.products = products;
+}
+
+var resolvedItemCount;
+if (itemCount !== null) {
+  var parsedItemCount = makeNumber(itemCount);
+  if(parsedItemCount >= 0 && data.eventType != "SignUp" && data.eventType != "Lead") {
+    resolvedItemCount = parsedItemCount;
   }
 }
 
+eventMetadata.itemCount = resolvedItemCount;
+
 // Certain events don't support certain params, so we conditionally set them
 if (data.eventType != "AddToCart" && data.eventType != "AddToWishlist") {
-  eventMetadata.transactionId = data.transactionId || copyFromDataLayer("transactionId") || (eventModel && eventModel.transactionId);
-}
-
-if (data.eventType != "SignUp" && data.eventType != "Lead") {
-  eventMetadata.itemCount = data.itemCount || copyFromDataLayer("itemCount") || (eventModel && eventModel.itemCount);
+  eventMetadata.transactionId =
+    data.transactionId ||
+    copyFromDataLayer("transactionId") ||
+    (eventModel && eventModel.transactionId);
 }
 
 if (data.eventType == "Custom") {
   if (data.customEventName) {
     eventMetadata.customEventName = data.customEventName;
   } else {
-    eventMetadata.customEventName = copyFromDataLayer("customEventName") || (eventModel && eventModel.customEventName);
+    eventMetadata.customEventName =
+      copyFromDataLayer("customEventName") ||
+      (eventModel && eventModel.customEventName);
   }
 }
 
 if (data.conversionId) {
   eventMetadata.conversionId = data.conversionId;
 } else {
-  eventMetadata.conversionId = copyFromDataLayer("conversionId") || (eventModel && eventModel.conversionId);
+  eventMetadata.conversionId =
+    copyFromDataLayer("conversionId") ||
+    (eventModel && eventModel.conversionId);
 }
 
-_rdt('track', data.eventType, eventMetadata);
+_rdt("track", data.eventType, eventMetadata);
 
-injectScript('https://www.redditstatic.com/ads/pixel.js', data.gtmOnSuccess, data.gtmOnFailure, 'rdtPixel');
+injectScript(
+  "https://www.redditstatic.com/ads/pixel.js",
+  data.gtmOnSuccess,
+  data.gtmOnFailure,
+  "rdtPixel"
+);
 
 
 ___WEB_PERMISSIONS___
@@ -1692,6 +1847,187 @@ scenarios:
 
     // Verify that the tag finished successfully
     assertApi('gtmOnSuccess').wasCalled();
+- name: Test user_data mapping from dataLayer
+  code: |-
+    // Simulate user_data in data layer
+    mock("copyFromDataLayer", (key) => {
+      if (key === "user_data") {
+        return {
+          email_address: "user@example.com",
+          phone_number: "555-123-4567",
+        };
+      }
+      return undefined;
+    });
+
+    let initArgs = null;
+    let trackArgs = null;
+
+    // Intercept rdt calls
+    mock("copyFromWindow", (key) => {
+      if (key === "rdt")
+        return function () {
+          if (arguments[0] === "init") {
+            initArgs = arguments;
+          }
+          if (arguments[0] === "track") {
+            trackArgs = arguments;
+          }
+        };
+    });
+
+    // Run the template code
+    runCode(mockData);
+
+    // Assert track call also received user_data via metadata merge
+    assertThat(trackArgs).isNotNull();
+    assertThat(trackArgs[2].email).isEqualTo("user@example.com");
+    assertThat(trackArgs[2].phoneNumber).isEqualTo("555-123-4567");
+
+    // Verify success
+    assertApi("gtmOnSuccess").wasCalled();
+- name: Test user_data mapping - explicit advancedMatchingParams Priority
+  code: |
+    // Provide explicit params via mockData (simulates UI config)
+    mockData.advancedMatchingParams = [
+      { name: "email", value: "userEmailFromAMParams@example.com" },
+    ];
+
+    // Simulate user_data in data layer with DIFFERENT email
+    mock("copyFromDataLayer", (key) => {
+      if (key === "user_data") {
+        return {
+          email_address: "userEmailFromDL@example.com", // This should be ignored
+          phone_number: "555-111-2222", // This should be used as it's not in explicit config
+        };
+      }
+      if (key === "advancedMatchingParams") {
+        // Ensure DL 'advancedMatchingParams' is not used
+        return undefined;
+      }
+      return undefined;
+    });
+
+    let initArgs = null;
+    let trackArgs = null;
+
+    // Intercept rdt calls
+    mock("copyFromWindow", (key) => {
+      if (key === "rdt")
+        return function () {
+          if (arguments[0] === "init") {
+            initArgs = arguments;
+          }
+          if (arguments[0] === "track") {
+            trackArgs = arguments;
+          }
+        };
+    });
+
+    // Run the template code
+    runCode(mockData);
+
+    // Assert track also uses email from AM Params if provided and GA phone
+    assertThat(trackArgs).isNotNull();
+    assertThat(trackArgs[2].email).isEqualTo("userEmailFromAMParams@example.com");
+    assertThat(trackArgs[2].phoneNumber).isEqualTo("555-111-2222"); // From user_data
+
+    // Verify success
+    assertApi("gtmOnSuccess").wasCalled();
+- name: Test ecommerce mapping
+  code: |
+    // Simulate ecommerce object in data layer
+    mock("copyFromDataLayer", (key) => {
+      if (key === "ecommerce") {
+        return {
+          currency: "USD",
+          value: 55.99,
+          items: [
+            { item_id: "SKU1", item_name: "Product A", quantity: 1 },
+            { item_id: "SKU2", item_name: "Product B", quantity: 2 },
+            { item_id: "SKU3", item_name: "Product C" }, // quantity not provided
+          ],
+        };
+      }
+      return undefined;
+    });
+
+    let trackArgs = null;
+
+    // Intercept rdt track call
+    mock("copyFromWindow", (key) => {
+      if (key === "rdt")
+        return function () {
+          if (arguments[0] === "track") {
+            trackArgs = arguments;
+          }
+        };
+    });
+
+    runCode(mockData);
+
+    // Assert track call metadata
+    assertThat(trackArgs).isNotNull();
+    const metadata = trackArgs[2];
+    assertThat(metadata.currency).isEqualTo("USD");
+    assertThat(metadata.value).isEqualTo(55.99);
+    assertThat(metadata.itemCount).isEqualTo(4); // 2 + 1 + 1 (SKU3 - if quantity not provided, we set to 1
+    assertThat(metadata.products).isEqualTo([
+      { id: "SKU1", name: "Product A" },
+      { id: "SKU2", name: "Product B" },
+      { id: "SKU3", name: "Product C" },
+    ]);
+
+    // Verify success
+    assertApi("gtmOnSuccess").wasCalled();
+- name: Test ecommerce mapping - Category Formatting
+  code: |
+    // Simulate ecommerce with hierarchical categories
+    mock("copyFromDataLayer", (key) => {
+      if (key === "ecommerce") {
+        return {
+          items: [
+            {
+              item_id: "SKU_CAT",
+              item_name: "Cat Product",
+              quantity: 1,
+              item_category: "Apparel",
+              item_category2: " Mens ",
+              item_category3: "Shirts",
+              item_category4: "",
+              item_category5: "  ",
+            },
+            { item_id: "SKU_NOCAT", item_name: "No Cat Product", quantity: 1 },
+          ],
+        };
+      }
+      return undefined;
+    });
+
+    let trackArgs = null;
+
+    // Intercept rdt track call
+    mock("copyFromWindow", (key) => {
+      if (key === "rdt")
+        return function () {
+          if (arguments[0] === "track") {
+            trackArgs = arguments;
+          }
+        };
+    });
+
+    runCode(mockData);
+
+    // Assert product categories
+    assertThat(trackArgs).isNotNull();
+    const products = trackArgs[2].products;
+    assertThat(products).isNotNull();
+    assertThat(products.length).isEqualTo(2);
+    assertThat(products[0].category).isEqualTo("Apparel > Mens > Shirts");
+    assertThat(products[1].category).isEqualTo(undefined);
+
+    // Verify success
+    assertApi("gtmOnSuccess").wasCalled();
 setup: |-
   let mockData = {
     id: 't2_123',
