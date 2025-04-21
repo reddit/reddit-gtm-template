@@ -571,17 +571,8 @@ if (!enableFirstPartyCookies) {
   _rdt('disableFirstPartyCookies');
 }
 
-if (ecommerce && ecommerce.currency) {
-  eventMetadata.currency = ecommerce.currency;
-} else {
-  eventMetadata.currency = data.currency || copyFromDataLayer("currency") || (eventModel && eventModel.currency);
-}
-
-if (ecommerce && ecommerce.value !== undefined) {
-  eventMetadata.value = ecommerce.value;
-} else {
-  eventMetadata.value = data.transactionValue || copyFromDataLayer("transactionValue") || (eventModel && eventModel.transactionValue);
-}
+eventMetadata.currency = data.currency || copyFromDataLayer("currency") || (eventModel && eventModel.currency) || (ecommerce && ecommerce.currency);
+eventMetadata.value = data.transactionValue || copyFromDataLayer("transactionValue") || (eventModel && eventModel.transactionValue) || (ecommerce && ecommerce.value);
 
 var formatCategories = function (item) {
   var categories = [];
@@ -642,18 +633,28 @@ var processEcommerceItems = function () {
 };
 
 var getProductData = function () {
-  var productData = null;
-  var itemCountData = null;
+  var itemCount =
+    data.itemCount ||
+    copyFromDataLayer("itemCount") ||
+    (eventModel && eventModel.itemCount) ||
+    null;
 
-  // Helper to get itemCount
-  var getItemCount = function () {
-    return (
-      data.itemCount ||
-      copyFromDataLayer("itemCount") ||
-      (eventModel && eventModel.itemCount) ||
-      null
-    );
-  };
+  if (
+    data.productInputType == "entryManual" &&
+    data.productsRows &&
+    data.productsRows.length > 0
+  ) {
+    // The simple table is of the correct format - an array of objects.
+    // We can assign it directly.
+    return { products: data.productsRows, itemCount: itemCount };
+  }
+  if (
+    data.productInputType == "entryJSON" &&
+    data.productsJSON &&
+    data.productsJSON.length > 0
+  ) {
+    return { products: data.productsJSON, itemCount: itemCount };
+  }
 
   // Try grabbing product metadata from dataLayer
   const productRowsFromDataLayer =
@@ -664,47 +665,22 @@ var getProductData = function () {
     (eventModel && eventModel.productsJSON);
 
   if (productRowsFromDataLayer && productRowsFromDataLayer.length > 0) {
-    productData = productRowsFromDataLayer;
-    itemCountData = getItemCount();
-  } else if (productJSONFromDataLayer && productJSONFromDataLayer.length > 0) {
-    productData = productJSONFromDataLayer;
-    itemCountData = getItemCount();
+    return { products: productRowsFromDataLayer, itemCount: itemCount };
   }
-  // If there is no product metadata in the top-level data layer, check for the ecommerce object
-  else {
-    var ecommerceResult = processEcommerceItems();
-    if (ecommerceResult.foundItems) {
-      productData = ecommerceResult.products;
-      itemCountData = ecommerceResult.itemCount;
-    }
-  }
-
-  if (productData === null) {
-    // If there is no product metadata in the top-level data layer, fall back to checking productInputType
-    if (
-      data.productInputType == "entryManual" &&
-      data.productsRows &&
-      data.productsRows.length > 0
-    ) {
-      // The simple table is of the correct format - an array of objects.
-      // We can assign it directly.
-      productData = data.productsRows;
-      if (itemCountData === null) itemCountData = getItemCount();
-    } else if (
-      data.productInputType == "entryJSON" &&
-      data.productsJSON &&
-      data.productsJSON.length > 0
-    ) {
-      productData = data.productsJSON;
-      if (itemCountData === null) itemCountData = getItemCount();
-    }
+  if (productJSONFromDataLayer && productJSONFromDataLayer.length > 0) {
+    return { products: productJSONFromDataLayer, itemCount: itemCount };
   }
   
-  if (productData === null && itemCountData === null) {
-    itemCountData = getItemCount(); 
+  // If there is no product metadata in the top-level data layer, check for the ecommerce object
+  var ecommerceResult = processEcommerceItems();
+  if (ecommerceResult.foundItems) {
+    return {
+      products: ecommerceResult.products,
+      itemCount: ecommerceResult.itemCount,
+    };
   }
 
-  return { products: productData, itemCount: itemCountData };
+  return { products: null, itemCount: itemCount};
 };
 
 var productInfo = getProductData();
@@ -718,7 +694,7 @@ if (products !== null) {
 var resolvedItemCount;
 if (itemCount !== null) {
   var parsedItemCount = makeNumber(itemCount);
-  if(parsedItemCount >= 0 && data.eventType != "SignUp" && data.eventType != "Lead") {
+  if(data.eventType != "SignUp" && data.eventType != "Lead") {
     resolvedItemCount = parsedItemCount;
   }
 }
@@ -2014,6 +1990,138 @@ scenarios:
 
     // Verify success
     assertApi("gtmOnSuccess").wasCalled();
+- name: Test Priority Order
+  code: |
+    mockData = {
+      id: "t2_reddit",
+      eventType: "Purchase",
+      productInputType: "entryManual",
+      productsRows: [{ id: "UI_123", name: "UI Product" }],
+      itemCount: 5,
+      currency: "USD",
+      transactionValue: 50,
+    };
+
+    // Mock both dataLayer products and GA ecommerce
+    mock("copyFromDataLayer", function (key) {
+      if (key === "productsRows")
+        return [{ id: "DL_123", name: "DataLayer Product" }];
+      if (key === "ecommerce")
+        return {
+          currency: "EUR",
+          value: 150,
+          items: [
+            {
+              item_id: "GA_123",
+              item_name: "GA Product",
+              quantity: 3,
+            },
+          ],
+        };
+      return undefined;
+    });
+
+    // Verify UI products are selected over others
+    mock("copyFromWindow", (key) => {
+      if (key === "rdt")
+        return function () {
+          if (arguments[0] === "track") {
+            const metadata = arguments[2];
+            assertThat(metadata.products[0].id).isEqualTo("UI_123");
+            assertThat(metadata.currency).isEqualTo("USD");
+            assertThat(metadata.value).isEqualTo(50);
+            assertThat(metadata.itemCount).isEqualTo(5);
+          }
+        };
+    });
+
+    runCode(mockData);
+    assertApi("gtmOnSuccess").wasCalled();
+- name: Test Priority Order - Multiple Data Sources for Same Fields
+  code: |
+    mockData = {
+      id: "t2_reddit",
+      eventType: "Purchase",
+      currency: "USD", // UI currency
+      transactionValue: 100, // UI value
+      productInputType: "entryManual",
+      productsRows: [{ id: "UI_ID", name: "UI Product" }], // UI products
+      itemCount: 1, // UI item count
+    };
+
+    // Set up DataLayer
+    mock("copyFromDataLayer", function (key) {
+      if (key === "currency") return "EUR";
+      if (key === "transactionValue") return 200;
+      if (key === "productsRows") return [{ id: "DL_ID", name: "DL Product" }];
+      if (key === "itemCount") return 2;
+      if (key === "ecommerce") // Different fields from ecommerce object
+        return {
+          currency: "JPY",
+          value: 300,
+          items: [
+            {
+              item_id: "GA_ID",
+              item_name: "GA Product",
+              quantity: 3,
+            },
+          ],
+        };
+      return undefined;
+    });
+
+    // Intercept track call to verify highest priority values are used
+    mock("copyFromWindow", (key) => {
+      if (key === "rdt")
+        return function () {
+          if (arguments[0] === "track") {
+            const metadata = arguments[2];
+
+            // UI values should win over DataLayer and GA ecommerce values
+            assertThat(
+              metadata.currency,
+              "UI currency should have priority"
+            ).isEqualTo("USD");
+            assertThat(metadata.value, "UI value should have priority").isEqualTo(
+              100
+            );
+            assertThat(
+              metadata.products[0].id,
+              "UI products should have priority"
+            ).isEqualTo("UI_ID");
+            assertThat(
+              metadata.itemCount,
+              "UI item count should have priority"
+            ).isEqualTo(1);
+          }
+        };
+    });
+
+    runCode(mockData);
+    assertApi("gtmOnSuccess").wasCalled();
+- name: Test Priority Order - DataLayer over GA when UI Missing
+  code: "mockData = {\n  id: \"t2_reddit\",\n  eventType: \"Purchase\",\n  // No UI\
+    \ values for currency, value, products or item count\n};\n\n// Set up DataLayer\
+    \ and GA ecommerce \nmock(\"copyFromDataLayer\", function (key) {\n  if (key ===\
+    \ \"currency\") return \"EUR\";\n  if (key === \"transactionValue\") return 200;\
+    \ \n  if (key === \"productsRows\") return [{ id: \"DL_ID\", name: \"DL Product\"\
+    \ }];\n  if (key === \"itemCount\") return 2;\n  if (key === \"ecommerce\")\n\
+    \    return {\n      currency: \"JPY\",\n      value: 300,\n      items: [\n \
+    \       {\n          item_id: \"ecommerce_ID\",\n          item_name: \"ecommerce\
+    \ Product\",\n          quantity: 3,\n        },\n      ],\n    };\n  return undefined;\n\
+    });\n\n// Intercept track call to verify DataLayer values used when UI is missing\n\
+    mock(\"copyFromWindow\", (key) => {\n  if (key === \"rdt\")\n    return function\
+    \ () {\n      if (arguments[0] === \"track\") {\n        const metadata = arguments[2];\n\
+    \n        // DataLayer values should win over ecommerce values\n        assertThat(\n\
+    \          metadata.currency,\n          \"DataLayer currency should have priority\
+    \ over ecommerce\"\n        ).isEqualTo(\"EUR\");\n        assertThat(\n     \
+    \     metadata.value,\n          \"DataLayer value should have priority over ecommerce\"\
+    \n        ).isEqualTo(200);\n        assertThat(\n          metadata.products[0].id,\n\
+    \          \"DataLayer products should have priority over ecommerce\"\n      \
+    \  ).isEqualTo(\"DL_ID\");\n        assertThat(\n          metadata.itemCount,\n\
+    \          \"DataLayer item count should have priority over ecommerce\"\n    \
+    \    ).isEqualTo(2);\n      }\n    };\n});\n\nrunCode(mockData);\nassertApi(\"\
+    gtmOnSuccess\").wasCalled();\n"
 setup: |-
   let mockData = {
     id: 't2_123',
