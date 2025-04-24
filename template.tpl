@@ -571,8 +571,23 @@ if (!enableFirstPartyCookies) {
   _rdt('disableFirstPartyCookies');
 }
 
+var isValidValue = function (val) {
+  return val !== undefined && val !== null && val !== "";
+};
+
 eventMetadata.currency = data.currency || copyFromDataLayer("currency") || (eventModel && eventModel.currency) || (ecommerce && ecommerce.currency);
-eventMetadata.value = data.transactionValue || copyFromDataLayer("transactionValue") || (eventModel && eventModel.transactionValue) || (ecommerce && ecommerce.value);
+
+var value;
+if (isValidValue(data.transactionValue)) {
+  value = data.transactionValue;
+} else if (isValidValue(copyFromDataLayer("transactionValue"))) {
+  value = copyFromDataLayer("transactionValue");
+} else if (eventModel && isValidValue(eventModel.transactionValue)) {
+  value = eventModel.transactionValue;
+} else if (ecommerce && isValidValue(ecommerce.value)) {
+  value = ecommerce.value;
+}
+eventMetadata.value = value;
 
 var formatCategories = function (item) {
   var categories = [];
@@ -2100,28 +2115,64 @@ scenarios:
     runCode(mockData);
     assertApi("gtmOnSuccess").wasCalled();
 - name: Test Priority Order - DataLayer over GA when UI Missing
-  code: "mockData = {\n  id: \"t2_reddit\",\n  eventType: \"Purchase\",\n  // No UI\
-    \ values for currency, value, products or item count\n};\n\n// Set up DataLayer\
-    \ and GA ecommerce \nmock(\"copyFromDataLayer\", function (key) {\n  if (key ===\
-    \ \"currency\") return \"EUR\";\n  if (key === \"transactionValue\") return 200;\
-    \ \n  if (key === \"productsRows\") return [{ id: \"DL_ID\", name: \"DL Product\"\
-    \ }];\n  if (key === \"itemCount\") return 2;\n  if (key === \"ecommerce\")\n\
-    \    return {\n      currency: \"JPY\",\n      value: 300,\n      items: [\n \
-    \       {\n          item_id: \"ecommerce_ID\",\n          item_name: \"ecommerce\
-    \ Product\",\n          quantity: 3,\n        },\n      ],\n    };\n  return undefined;\n\
-    });\n\n// Intercept track call to verify DataLayer values used when UI is missing\n\
-    mock(\"copyFromWindow\", (key) => {\n  if (key === \"rdt\")\n    return function\
-    \ () {\n      if (arguments[0] === \"track\") {\n        const metadata = arguments[2];\n\
-    \n        // DataLayer values should win over ecommerce values\n        assertThat(\n\
-    \          metadata.currency,\n          \"DataLayer currency should have priority\
-    \ over ecommerce\"\n        ).isEqualTo(\"EUR\");\n        assertThat(\n     \
-    \     metadata.value,\n          \"DataLayer value should have priority over ecommerce\"\
-    \n        ).isEqualTo(200);\n        assertThat(\n          metadata.products[0].id,\n\
-    \          \"DataLayer products should have priority over ecommerce\"\n      \
-    \  ).isEqualTo(\"DL_ID\");\n        assertThat(\n          metadata.itemCount,\n\
-    \          \"DataLayer item count should have priority over ecommerce\"\n    \
-    \    ).isEqualTo(2);\n      }\n    };\n});\n\nrunCode(mockData);\nassertApi(\"\
-    gtmOnSuccess\").wasCalled();\n"
+  code: "mockData = {\n  id: \"t2_reddit\",\n  eventType: \"Purchase\",\n};\n\n//\
+    \ Set up DataLayer and GA ecommerce \nmock(\"copyFromDataLayer\", function (key)\
+    \ {\n  if (key === \"currency\") return \"EUR\";\n  if (key === \"transactionValue\"\
+    ) return 200; \n  if (key === \"productsRows\") return [{ id: \"DL_ID\", name:\
+    \ \"DL Product\" }];\n  if (key === \"itemCount\") return 2;\n  if (key === \"\
+    ecommerce\")\n    return {\n      currency: \"JPY\",\n      value: 300,\n    \
+    \  items: [\n        {\n          item_id: \"ecommerce_ID\",\n          item_name:\
+    \ \"ecommerce Product\",\n          quantity: 3,\n        },\n      ],\n    };\n\
+    \  return undefined;\n});\n\n// Intercept track call to verify DataLayer values\
+    \ used when UI is missing\nmock(\"copyFromWindow\", (key) => {\n  if (key ===\
+    \ \"rdt\")\n    return function () {\n      if (arguments[0] === \"track\") {\n\
+    \        const metadata = arguments[2];\n\n        // DataLayer values should\
+    \ win over ecommerce values\n        assertThat(\n          metadata.currency,\n\
+    \          \"DataLayer currency should have priority over ecommerce\"\n      \
+    \  ).isEqualTo(\"EUR\");\n        assertThat(\n          metadata.value,\n   \
+    \       \"DataLayer value should have priority over ecommerce\"\n        ).isEqualTo(200);\n\
+    \        assertThat(\n          metadata.products[0].id,\n          \"DataLayer\
+    \ products should have priority over ecommerce\"\n        ).isEqualTo(\"DL_ID\"\
+    );\n        assertThat(\n          metadata.itemCount,\n          \"DataLayer\
+    \ item count should have priority over ecommerce\"\n        ).isEqualTo(2);\n\
+    \      }\n    };\n});\n\nrunCode(mockData);\nassertApi(\"gtmOnSuccess\").wasCalled();\n"
+- name: Test Zero Value Handling
+  code: |
+    mockData = {
+      id: "t2_reddit",
+      eventType: "Purchase",
+      transactionValue: 0, // Explicitly set to zero in UI
+      currency: "USD",
+    };
+
+    // Set up non-zero values in data layer and ecommerce
+    mock("copyFromDataLayer", function (key) {
+      if (key === "transactionValue") return 100; // DL value should be ignored
+      if (key === "ecommerce")
+        return {
+          value: 200, // GA value should be ignored
+          currency: "EUR",
+        };
+      return undefined;
+    });
+
+    // Intercept track call to verify zero value is preserved
+    mock("copyFromWindow", (key) => {
+      if (key === "rdt")
+        return function () {
+          if (arguments[0] === "track") {
+            // Verify that the zero value from UI is used, not the fallbacks
+            assertThat(
+              arguments[2].value,
+              "Zero value should be preserved"
+            ).isEqualTo(0);
+            assertThat(arguments[2].currency).isEqualTo("USD");
+          }
+        };
+    });
+
+    runCode(mockData);
+    assertApi("gtmOnSuccess").wasCalled();
 setup: |-
   let mockData = {
     id: 't2_123',
