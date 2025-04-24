@@ -709,7 +709,7 @@ if (products !== null) {
 var resolvedItemCount;
 if (itemCount !== null) {
   var parsedItemCount = makeNumber(itemCount);
-  if(data.eventType != "SignUp" && data.eventType != "Lead") {
+  if(data.eventType != "SignUp" && data.eventType != "sign_up" && data.eventType != "Lead" && data.eventType != "generate_lead") {
     resolvedItemCount = parsedItemCount;
   }
 }
