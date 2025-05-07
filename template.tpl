@@ -491,6 +491,8 @@ var makeNumber = require('makeNumber');
 var JSON = require('JSON');
 var copyFromDataLayer = require("copyFromDataLayer");
 
+const templateVersion = "1.0.0";
+
 var getRdt = function() {
   var _rdt = copyFromWindow('rdt');
   if (_rdt) {
@@ -527,14 +529,29 @@ var eventMetadata = advancedMatchingParams && advancedMatchingParams.length ? ma
 // copy advanced matching parameters
 var initData = JSON.parse(JSON.stringify(eventMetadata));
 
-if (userData) {
-  if (!eventMetadata.email && (userData.sha256_email_address || userData.email_address)) {
-    eventMetadata.email =
-      userData.sha256_email_address || userData.email_address;
+if (!eventMetadata.email) {
+  const emailFromEventModel = eventModel && eventModel.user_data && (eventModel.user_data.email_address || eventModel.user_data.sha256_email_address);
+
+  if (emailFromEventModel) {
+    eventMetadata.email = emailFromEventModel;
+  } else {
+    const emailFromDataLayer = userData && (userData.sha256_email_address || userData.email_address);
+    if (emailFromDataLayer) {
+      eventMetadata.email = emailFromDataLayer;
+    }
   }
-  if (!eventMetadata.phoneNumber && (userData.sha256_phone_number || userData.phone_number)) {
-    eventMetadata.phoneNumber =
-      userData.sha256_phone_number || userData.phone_number;
+}
+
+if (!eventMetadata.phoneNumber) {
+  const phoneFromEventModel = eventModel && eventModel.user_data && (eventModel.user_data.phone_number || eventModel.user_data.sha256_phone_number);
+
+  if (phoneFromEventModel) {
+    eventMetadata.phoneNumber = phoneFromEventModel;
+  } else {
+    const phoneFromDataLayer = userData && (userData.sha256_phone_number || userData.phone_number);
+    if (phoneFromDataLayer) {
+      eventMetadata.phoneNumber = phoneFromDataLayer;
+    }
   }
 }
 
@@ -561,6 +578,20 @@ if (dataProcessingOptions.region) {
   initData.dprc = dataProcessingOptions.region;
 }
 
+// Check for ecommerce or userData usage 
+var getUsageProfile = function () {
+  var dataSource = 0;
+  // Check for traditional Tag Manager API
+  if (ecommerce || userData) dataSource += 1;
+  // Check for Google Tag API
+  if (eventModel && (eventModel.user_data || eventModel.items || eventModel.currency || eventModel.value)) dataSource += 2;
+
+  // if some how both set data source to 3
+  return dataSource.toString();
+};
+
+initData.partner_version = "GTM_" + templateVersion + ":" + getUsageProfile();
+
 var _rdt = getRdt();
 if (!_rdt.pixelId) {
   _rdt('init', data.id, initData);
@@ -584,6 +615,8 @@ if (isValidValue(data.transactionValue)) {
   value = copyFromDataLayer("transactionValue");
 } else if (eventModel && isValidValue(eventModel.transactionValue)) {
   value = eventModel.transactionValue;
+} else if (eventModel && isValidValue(eventModel.value)) {
+  value = eventModel.value;
 } else if (ecommerce && isValidValue(ecommerce.value)) {
   value = ecommerce.value;
 }
@@ -592,7 +625,7 @@ eventMetadata.value = value;
 var formatCategories = function (item) {
   var categories = [];
   var categoryLevels = ["item_category", "item_category2", "item_category3", "item_category4", "item_category5"];
-  
+
   for(var i = 0; i < categoryLevels.length; i++) {
     var key = categoryLevels[i];
     if(item[key]) {
@@ -602,7 +635,7 @@ var formatCategories = function (item) {
       }
     }
   }
-  
+
   return categories.length > 0 ? categories.join(" > ") : null;
 };
 
@@ -685,7 +718,7 @@ var getProductData = function () {
   if (productJSONFromDataLayer && productJSONFromDataLayer.length > 0) {
     return { products: productJSONFromDataLayer, itemCount: itemCount };
   }
-  
+
   // If there is no product metadata in the top-level data layer, check for the ecommerce object
   var ecommerceResult = processEcommerceItems();
   if (ecommerceResult.foundItems) {
@@ -695,7 +728,7 @@ var getProductData = function () {
     };
   }
 
-  return { products: null, itemCount: itemCount};
+  return { products: null, itemCount: itemCount };
 };
 
 var productInfo = getProductData();
@@ -1166,6 +1199,7 @@ scenarios:
       idfa: 'EA7583CD-A667-48BC-B806-42ECB2B48606',
       integration: 'gtm',
       partner: '',
+      partner_version: 'GTM_1.0.0:0',
     };
 
     mock('copyFromWindow', key => {
@@ -1581,6 +1615,7 @@ scenarios:
       idfa: 'EA7583CD-A667-48BC-B806-42ECB2B48606',
       integration: 'gtm',
       partner: '',
+      partner_version: 'GTM_1.0.0:0',
       dpm: 'LDU',
       dpcc: 'US',
       dprc: 'US_CA'
@@ -1612,6 +1647,7 @@ scenarios:
       aaid: 'cdda802e-fb9c-47ad-9866-0794d394c912',
       idfa: 'EA7583CD-A667-48BC-B806-42ECB2B48606',
       partner: '',
+      partner_version: 'GTM_1.0.0:0',
       integration: 'gtm',
       dpcc: 'US'
     };
@@ -1653,6 +1689,7 @@ scenarios:
       idfa: 'EA7583CD-A667-48BC-B806-42ECB2B48606',
       integration: 'gtm',
       partner: 'automatic_gtm',
+      partner_version: 'GTM_1.0.0:0',
     };
 
 
@@ -1707,6 +1744,7 @@ scenarios:
       idfa: 'EA7583CD-A667-48BC-B806-42ECB2B48606',
       integration: 'gtm',
       partner: '',
+      partner_version: 'GTM_1.0.0:2',
       dpm: 'LDU',
       dpcc: 'US',
       dprc: 'US_CA'
@@ -1783,6 +1821,7 @@ scenarios:
       idfa: 'EA7583CD-A667-48BC-B806-42ECB2B48606',
       integration: 'gtm',
       partner: '',
+      partner_version: 'GTM_1.0.0:0',
       dpm: 'LDU',
       dpcc: 'US',
       dprc: 'US_CA'
@@ -1826,18 +1865,50 @@ scenarios:
     assertApi('gtmOnSuccess').wasCalled();
 - name: Test user_data mapping from dataLayer
   code: |-
-    // Simulate user_data in data layer
+    mockData = {
+      eventType: "Custom",
+      id: "t2_potato",
+      enableFirstPartyCookies: true,
+      conversionId: "conversion-id",
+      productsJSON: '[{"id":"123456789","category":"Food","name":"Carne Asada Burrito"}]',
+      itemCount: 1,
+      transactionValue: 1000,
+      currency: "USD",
+      transactionId: "123456789",
+      customEventName: "Subscribe",
+      // Simulate user_data in data layer
+      user_data: {
+        email_address: "user@example.com",
+        phone_number: "555-123-4567",
+      },
+      advancedMatching: true,
+      advancedMatchingParams: [
+        {name: 'aaid', value: 'cdda802e-fb9c-47ad-9866-0794d394c912'},
+        {name: 'idfa', value: 'EA7583CD-A667-48BC-B806-42ECB2B48606'}
+      ],
+      dataProcessingParams: [
+        {name: 'mode', value: 'LDU'},
+        {name: 'country', value: 'US'},
+        {name: 'region', value: 'US_CA'}
+      ]
+    };
+
+    const expectedAdvancedMatchingData = {
+      useDecimalCurrencyValues: true,
+      aaid: 'cdda802e-fb9c-47ad-9866-0794d394c912',
+      idfa: 'EA7583CD-A667-48BC-B806-42ECB2B48606',
+      integration: 'gtm',
+      partner: '',
+      partner_version: 'GTM_1.0.0:1',
+      dpm: 'LDU',
+      dpcc: 'US',
+      dprc: 'US_CA'
+    };
+
     mock("copyFromDataLayer", (key) => {
-      if (key === "user_data") {
-        return {
-          email_address: "user@example.com",
-          phone_number: "555-123-4567",
-        };
-      }
-      return undefined;
+      return mockData[key];
     });
 
-    let initArgs = null;
     let trackArgs = null;
 
     // Intercept rdt calls
@@ -1845,7 +1916,7 @@ scenarios:
       if (key === "rdt")
         return function () {
           if (arguments[0] === "init") {
-            initArgs = arguments;
+            assertThat(arguments[2], 'Copied advanced matching parameters incorrect').isEqualTo(expectedAdvancedMatchingData);
           }
           if (arguments[0] === "track") {
             trackArgs = arguments;
