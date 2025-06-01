@@ -587,7 +587,7 @@ var getUsageProfile = function () {
   if (eventModel && (eventModel.user_data || eventModel.items || eventModel.currency || eventModel.value)) dataSource += 2;
   
   // if some how both set data source to 3
-  return dataSource === 0 ? "" : ":" + dataSource.toString();
+  return dataSource === 0 ? "" : ":" + dataSource;
 };
 
 initData.partner_version = templateVersion;
