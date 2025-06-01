@@ -585,12 +585,12 @@ var getUsageProfile = function () {
   if (ecommerce || userData) dataSource += 1;
   // Check for Google Tag API
   if (eventModel && (eventModel.user_data || eventModel.items || eventModel.currency || eventModel.value)) dataSource += 2;
-
+  
   // if some how both set data source to 3
-  return dataSource.toString();
+  return dataSource === 0 ? "" : ":" + dataSource.toString();
 };
 
-initData.partner_version = "GTM_" + templateVersion + ":" + getUsageProfile();
+initData.partner_version = templateVersion;
 
 var _rdt = getRdt();
 if (!_rdt.pixelId) {
@@ -615,10 +615,10 @@ if (isValidValue(data.transactionValue)) {
   value = copyFromDataLayer("transactionValue");
 } else if (eventModel && isValidValue(eventModel.transactionValue)) {
   value = eventModel.transactionValue;
-} else if (eventModel && isValidValue(eventModel.value)) {
-  value = eventModel.value;
 } else if (ecommerce && isValidValue(ecommerce.value)) {
   value = ecommerce.value;
+} else if (eventModel && isValidValue(eventModel.value)) {
+  value = eventModel.value;
 }
 eventMetadata.value = value;
 
@@ -770,6 +770,8 @@ if (data.conversionId) {
 } else {
   eventMetadata.conversionId = copyFromDataLayer("conversionId") || (eventModel && eventModel.conversionId);
 }
+
+eventMetadata.partner_version = templateVersion + getUsageProfile();
 
 _rdt('track', data.eventType, eventMetadata);
 
@@ -1199,7 +1201,7 @@ scenarios:
       idfa: 'EA7583CD-A667-48BC-B806-42ECB2B48606',
       integration: 'gtm',
       partner: '',
-      partner_version: 'GTM_1.0.0:0',
+      partner_version: '1.0.0',
     };
 
     mock('copyFromWindow', key => {
@@ -1217,38 +1219,15 @@ scenarios:
     assertApi('makeTableMap').wasCalledWith(mockData.advancedMatchingParams, 'name', 'value');
     assertApi('gtmOnSuccess').wasCalled();
 - name: Test Event Metadata Purchase
-  code: |-
-    mockData = {
-      id: "t2_potato",
-      eventType: "Purchase",
-      enableFirstPartyCookies: true,
-      itemCount: 1,
-      transactionValue: 1000,
-      currency: "USD",
-      transactionId: "123456789",
-    };
-
-    const expected = {
-      conversionId: undefined,
-      itemCount: 1,
-      value: 1000,
-      currency: 'USD',
-      transactionId: '123456789'
-    };
-
-    mock('copyFromWindow', key => {
-      if (key === 'rdt') return function() {
-        if (arguments[0] === 'track') {
-          assertThat(arguments[2], 'Event metadata parameters incorrect').isEqualTo(expected);
-        }
-      };
-    });
-
-    // Call runCode to run the template's code.
-    runCode(mockData);
-
-    // Verify that the tag finished successfully.
-    assertApi('gtmOnSuccess').wasCalled();
+  code: "mockData = {\n  id: \"t2_potato\",\n  eventType: \"Purchase\",\n  enableFirstPartyCookies:\
+    \ true,\n  itemCount: 1,\n  transactionValue: 1000,\n  currency: \"USD\",\n  transactionId:\
+    \ \"123456789\"\n};\n\nconst expected = {\n  conversionId: undefined,\n  itemCount:\
+    \ 1,\n  value: 1000,\n  currency: 'USD',\n  transactionId: '123456789',\n  partner_version:\
+    \ \"1.0.0\"\n  \n  \n};\n\nmock('copyFromWindow', key => {\n  if (key === 'rdt')\
+    \ return function() {\n    if (arguments[0] === 'track') {\n      assertThat(arguments[2],\
+    \ 'Event metadata parameters incorrect').isEqualTo(expected);\n    }\n  };\n});\n\
+    \n// Call runCode to run the template's code.\nrunCode(mockData);\n\n// Verify\
+    \ that the tag finished successfully.\nassertApi('gtmOnSuccess').wasCalled();"
 - name: Test Event Metadata TransactionId Omission
   code: |-
     mockData = {
@@ -1266,6 +1245,7 @@ scenarios:
       value: 1000,
       currency: 'USD',
       conversionId: undefined,
+      partner_version: "1.0.0"
     };
 
     mock('copyFromWindow', key => {
@@ -1298,7 +1278,7 @@ scenarios:
       value: 1000,
       currency: 'USD',
       conversionId: undefined,
-
+      partner_version: "1.0.0"
     };
 
     mock('copyFromWindow', key => {
@@ -1388,6 +1368,7 @@ scenarios:
       transactionId: "123456789",
       customEventName: "Subscribe",
       conversionId: undefined,
+      partner_version: "1.0.0"
     };
 
     mock('copyFromWindow', key => {
@@ -1421,6 +1402,7 @@ scenarios:
       value: 1000,
       currency: 'USD',
       conversionId: undefined,
+      partner_version: "1.0.0"
     };
 
     mock('copyFromWindow', key => {
@@ -1437,36 +1419,16 @@ scenarios:
     // Verify that the tag finished successfully.
     assertApi('gtmOnSuccess').wasCalled();
 - name: Test Products Rows
-  code: |-
-    mockData = {
-      id: "t2_potato",
-      eventType: "AddToCart",
-      enableFirstPartyCookies: true,
-      productInputType: "entryManual",
-      productsRows: [{'id':'123456789','category':'Food','name':'Carne Asada Burrito'}]
-    };
-
-    const expected = {
-      currency: undefined,
-      value: undefined,
-      itemCount: undefined,
-      conversionId: undefined,
-      products: [{'id':'123456789','category':'Food','name':'Carne Asada Burrito'}]
-    };
-
-    mock('copyFromWindow', key => {
-      if (key === 'rdt') return function() {
-        if (arguments[0] === 'track') {
-          assertThat(arguments[2], 'Event metadata product parameters incorrect').isEqualTo(expected);
-        }
-      };
-    });
-
-    // Call runCode to run the template's code.
-    runCode(mockData);
-
-    // Verify that the tag finished successfully.
-    assertApi('gtmOnSuccess').wasCalled();
+  code: "mockData = {\n  id: \"t2_potato\",\n  eventType: \"AddToCart\",\n  enableFirstPartyCookies:\
+    \ true,\n  productInputType: \"entryManual\",\n  productsRows: [{'id':'123456789','category':'Food','name':'Carne\
+    \ Asada Burrito'}]\n};\n\nconst expected = {\n  currency: undefined,\n  value:\
+    \ undefined,\n  itemCount: undefined,\n  conversionId: undefined,\n  products:\
+    \ [{'id':'123456789','category':'Food','name':'Carne Asada Burrito'}],\n  partner_version:\
+    \ \"1.0.0\"\n  \n};\n\nmock('copyFromWindow', key => {\n  if (key === 'rdt') return\
+    \ function() {\n    if (arguments[0] === 'track') {\n      assertThat(arguments[2],\
+    \ 'Event metadata product parameters incorrect').isEqualTo(expected);\n    }\n\
+    \  };\n});\n\n// Call runCode to run the template's code.\nrunCode(mockData);\n\
+    \n// Verify that the tag finished successfully.\nassertApi('gtmOnSuccess').wasCalled();"
 - name: Test Products Empty Rows
   code: |-
     mockData = {
@@ -1482,6 +1444,7 @@ scenarios:
       value: undefined,
       itemCount: undefined,
       conversionId: undefined,
+      partner_version: "1.0.0"
     };
 
     mock('copyFromWindow', key => {
@@ -1512,6 +1475,7 @@ scenarios:
       value: undefined,
       itemCount: undefined,
       conversionId: undefined,
+      partner_version: "1.0.0"
     };
 
     mock('copyFromWindow', key => {
@@ -1542,7 +1506,8 @@ scenarios:
       value: undefined,
       itemCount: undefined,
       conversionId: undefined,
-      products: '[{"id":"123456789","category":"Food","name":"Carne Asada Burrito"}]'
+      products: '[{"id":"123456789","category":"Food","name":"Carne Asada Burrito"}]',
+      partner_version: "1.0.0"
     };
 
     mock('copyFromWindow', key => {
@@ -1572,6 +1537,7 @@ scenarios:
       currency: undefined,
       transactionId: undefined,
       conversionId: "conversion-id",
+      partner_version: "1.0.0"
     };
 
     mock('copyFromWindow', key => {
@@ -1615,7 +1581,7 @@ scenarios:
       idfa: 'EA7583CD-A667-48BC-B806-42ECB2B48606',
       integration: 'gtm',
       partner: '',
-      partner_version: 'GTM_1.0.0:0',
+      partner_version: '1.0.0',
       dpm: 'LDU',
       dpcc: 'US',
       dprc: 'US_CA'
@@ -1647,7 +1613,7 @@ scenarios:
       aaid: 'cdda802e-fb9c-47ad-9866-0794d394c912',
       idfa: 'EA7583CD-A667-48BC-B806-42ECB2B48606',
       partner: '',
-      partner_version: 'GTM_1.0.0:0',
+      partner_version: '1.0.0',
       integration: 'gtm',
       dpcc: 'US'
     };
@@ -1689,7 +1655,7 @@ scenarios:
       idfa: 'EA7583CD-A667-48BC-B806-42ECB2B48606',
       integration: 'gtm',
       partner: 'automatic_gtm',
-      partner_version: 'GTM_1.0.0:0',
+      partner_version: '1.0.0',
     };
 
 
@@ -1744,7 +1710,7 @@ scenarios:
       idfa: 'EA7583CD-A667-48BC-B806-42ECB2B48606',
       integration: 'gtm',
       partner: '',
-      partner_version: 'GTM_1.0.0:2',
+      partner_version: '1.0.0',
       dpm: 'LDU',
       dpcc: 'US',
       dprc: 'US_CA'
@@ -1757,7 +1723,8 @@ scenarios:
       transactionId: "123456789",
       customEventName: "Subscribe",
       itemCount: 1,
-      products: '[{"id":"123456789","category":"Food","name":"Carne Asada Burrito"}]'
+      products: '[{"id":"123456789","category":"Food","name":"Carne Asada Burrito"}]',
+      partner_version: '1.0.0:2',
     };
 
     mock('copyFromDataLayer', function(key) {
@@ -1821,7 +1788,7 @@ scenarios:
       idfa: 'EA7583CD-A667-48BC-B806-42ECB2B48606',
       integration: 'gtm',
       partner: '',
-      partner_version: 'GTM_1.0.0:0',
+      partner_version: '1.0.0',
       dpm: 'LDU',
       dpcc: 'US',
       dprc: 'US_CA'
@@ -1834,7 +1801,8 @@ scenarios:
       transactionId: "123456789",
       customEventName: "Subscribe",
       itemCount: 1,
-      products: '[{"id":"123456789","category":"Food","name":"Carne Asada Burrito"}]'
+      products: '[{"id":"123456789","category":"Food","name":"Carne Asada Burrito"}]',
+      partner_version: '1.0.0:1',
     };
 
     mock('copyFromDataLayer', function(key) {
@@ -1899,7 +1867,7 @@ scenarios:
       idfa: 'EA7583CD-A667-48BC-B806-42ECB2B48606',
       integration: 'gtm',
       partner: '',
-      partner_version: 'GTM_1.0.0:1',
+      partner_version: '1.0.0',
       dpm: 'LDU',
       dpcc: 'US',
       dprc: 'US_CA'
