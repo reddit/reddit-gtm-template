@@ -2,9 +2,11 @@ homepage: "https://www.redditinc.com/advertising"
 documentation: "https://reddit.my.site.com/helpcenter/s/article/Install-the-Reddit-Pixel-on-your-website#GTM"
 versions:
   # Latest Version
+  - sha: 0c06f4231e475655a17b2d6cd97e9466e81b4745
+    changeNotes: This release updates the template to pull data from Google Analytics ecommerce and user data objects can converts them to Reddit metadata.
+  # Older versions
   - sha: 5e47b1bc605050916078800dfe850979369ee246
     changeNotes: This release updates the UI for the integration parameter.
-  # Older versions
   - sha: df9192c6963870c411661063c5b383cda6ba47e9
     changeNotes: This release includes the ability to pass phone numbers as advanced matching parameters.
   - sha: c57452b2b030423ae8106ecb4693e6558c24e671
