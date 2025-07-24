@@ -404,6 +404,15 @@ ___TEMPLATE_PARAMETERS___
     "displayName": "Product Information",
     "subParams": [
       {
+        "type": "CHECKBOX",
+        "name": "useEcommerceProductData",
+        "checkboxText": "Automatically collect and process Google Analytics ecommerce data",
+        "simpleValueType": true,
+        "defaultValue": false,
+        "displayName": "Use Ecommerce Product Data",
+        "help": "Check this box to automatically use product data from a \u003ca href\u003d\"https://developers.google.com/analytics/devguides/collection/ga4/ecommerce?client_type\u003dgtm\" target\u003d\"_blank\"\u003estandard GA ecommerce implementation\u003c/a\u003e. Reddit will automatically collect and process this data as product metadata. Leave unchecked to use the manual entry options below."
+      },
+      {
         "type": "RADIO",
         "name": "productInputType",
         "displayName": "Input Type",
@@ -491,7 +500,7 @@ var makeNumber = require('makeNumber');
 var JSON = require('JSON');
 var copyFromDataLayer = require("copyFromDataLayer");
 
-const templateVersion = "1.0.1";
+const templateVersion = "1.0.2";
 
 var getRdt = function() {
   var _rdt = copyFromWindow('rdt');
@@ -606,7 +615,7 @@ var isValidValue = function (val) {
   return val !== undefined && val !== null && val !== "";
 };
 
-eventMetadata.currency = data.currency ||(eventModel && eventModel.currency) || (ecommerce && ecommerce.currency) || copyFromDataLayer("currency");
+eventMetadata.currency = data.currency || (eventModel && eventModel.currency) || (ecommerce && ecommerce.currency) || copyFromDataLayer("currency");
 
 var value;
 if (isValidValue(data.transactionValue)) {
@@ -687,45 +696,49 @@ var getProductData = function () {
     (eventModel && eventModel.itemCount) ||
     null;
   
-  // Check for Data Layer Ecommerce (e.g., GA4 ecommerce.items)
-  var ecommerceResult = processEcommerceItems();
-  if (ecommerceResult.foundItems) {
-    return {
-      products: ecommerceResult.products,
-      itemCount: ecommerceResult.itemCount,
-    };
-  }
-  
-  // Try grabbing product metadata from dataLayer
-  const productRowsFromDataLayer =
-    copyFromDataLayer("productsRows") ||
-    (eventModel && eventModel.productsRows);
-  const productJSONFromDataLayer =
-    copyFromDataLayer("productsJSON") ||
-    (eventModel && eventModel.productsJSON);
+  // Check for automatice ecommerce processing opt-in.
+  if (data.useEcommerceProductData == true) {
+    // Check for Data Layer Ecommerce (e.g., GA4 ecommerce.items)
+    var ecommerceResult = processEcommerceItems();
+    if (ecommerceResult.foundItems) {
+      return {
+        products: ecommerceResult.products,
+        itemCount: ecommerceResult.itemCount,
+      };
+    }
+  } else {
+    // Try grabbing product metadata from dataLayer
+    const productRowsFromDataLayer =
+      copyFromDataLayer("productsRows") ||
+      (eventModel && eventModel.productsRows);
+    const productJSONFromDataLayer =
+      copyFromDataLayer("productsJSON") ||
+      (eventModel && eventModel.productsJSON);
 
-  if (productRowsFromDataLayer && productRowsFromDataLayer.length > 0) {
-    return { products: productRowsFromDataLayer, itemCount: itemCount };
-  }
-  if (productJSONFromDataLayer && productJSONFromDataLayer.length > 0) {
-    return { products: productJSONFromDataLayer, itemCount: itemCount };
-  }
+    if (productRowsFromDataLayer && productRowsFromDataLayer.length > 0) {
+      return { products: productRowsFromDataLayer, itemCount: itemCount };
+    }
+    if (productJSONFromDataLayer && productJSONFromDataLayer.length > 0) {
+      return { products: productJSONFromDataLayer, itemCount: itemCount };
+    }
 
-  if (
-    data.productInputType == "entryManual" &&
-    data.productsRows &&
-    data.productsRows.length > 0
-  ) {
-    // The simple table is of the correct format - an array of objects.
-    // We can assign it directly.
-    return { products: data.productsRows, itemCount: itemCount };
-  }
-  if (
-    data.productInputType == "entryJSON" &&
-    data.productsJSON &&
-    data.productsJSON.length > 0
-  ) {
-    return { products: data.productsJSON, itemCount: itemCount };
+    // Fallback to product data configured in the tag UI
+    if (
+      data.productInputType == "entryManual" &&
+      data.productsRows &&
+      data.productsRows.length > 0
+    ) {
+      // The simple table is of the correct format - an array of objects.
+      // We can assign it directly.
+      return { products: data.productsRows, itemCount: itemCount };
+    }
+    if (
+      data.productInputType == "entryJSON" &&
+      data.productsJSON &&
+      data.productsJSON.length > 0
+    ) {
+      return { products: data.productsJSON, itemCount: itemCount };
+    }
   }
 
   return { products: null, itemCount: itemCount };
@@ -1179,35 +1192,45 @@ scenarios:
     // Verify that the tag finished successfully.
     assertApi('gtmOnSuccess').wasCalled();
 - name: Test Advanced Matching
-  code: |
+  code: "mockData = {\n  id: \"t2_123\",\n  event_type: \"PageVisit\",\n  enableFirstPartyCookies:\
+    \ true,\n  advancedMatching: true,\n  advancedMatchingParams: [\n    {name: 'email',\
+    \ value: 'alice@example.com'},\n    {name: 'phoneNumber', value: '222-333-4444'},\n\
+    \    {name: 'aaid', value: 'cdda802e-fb9c-47ad-9866-0794d394c912'},\n    {name:\
+    \ 'idfa', value: 'EA7583CD-A667-48BC-B806-42ECB2B48606'}\n  ],\n};\n\nconst expected\
+    \ = {\n  useDecimalCurrencyValues: true,\n  email: 'alice@example.com',\n  phoneNumber:\
+    \ '222-333-4444',\n  aaid: 'cdda802e-fb9c-47ad-9866-0794d394c912',\n  idfa: 'EA7583CD-A667-48BC-B806-42ECB2B48606',\n\
+    \  integration: 'gtm',\n  partner: '',\n  partner_version: '1.0.2',\n};\n\nmock('copyFromWindow',\
+    \ key => {\n  if (key === 'rdt') return function() {\n     if (arguments[0] ===\
+    \ 'init') {\n       const actualArgs = arguments[2];\n       \n       assertThat(actualArgs,\
+    \ 'Advanced matching parameters incorrect').isEqualTo(expected);\n    }\n  };\n\
+    });\n\n// Call runCode to run the template's code.\nrunCode(mockData);\n\n// Verify\
+    \ that the tag finished successfully.\nassertApi('makeTableMap').wasCalledWith(mockData.advancedMatchingParams,\
+    \ 'name', 'value');\nassertApi('gtmOnSuccess').wasCalled();\n"
+- name: Test Event Metadata Purchase
+  code: |-
     mockData = {
-      id: "t2_123",
-      event_type: "PageVisit",
+      id: "t2_potato",
+      eventType: "Purchase",
       enableFirstPartyCookies: true,
-      advancedMatching: true,
-      advancedMatchingParams: [
-        {name: 'email', value: 'alice@example.com'},
-        {name: 'phoneNumber', value: '222-333-4444'},
-        {name: 'aaid', value: 'cdda802e-fb9c-47ad-9866-0794d394c912'},
-        {name: 'idfa', value: 'EA7583CD-A667-48BC-B806-42ECB2B48606'}
-      ],
+      itemCount: 1,
+      transactionValue: 1000,
+      currency: "USD",
+      transactionId: "123456789"
     };
 
     const expected = {
-      useDecimalCurrencyValues: true,
-      email: 'alice@example.com',
-      phoneNumber: '222-333-4444',
-      aaid: 'cdda802e-fb9c-47ad-9866-0794d394c912',
-      idfa: 'EA7583CD-A667-48BC-B806-42ECB2B48606',
-      integration: 'gtm',
-      partner: '',
-      partner_version: '1.0.1',
+      conversionId: undefined,
+      itemCount: 1,
+      value: 1000,
+      currency: 'USD',
+      transactionId: '123456789',
+      partner_version: "1.0.2",
     };
 
     mock('copyFromWindow', key => {
       if (key === 'rdt') return function() {
-         if (arguments[0] === 'init') {
-          assertThat(arguments[2], 'Advanced matching parameters incorrect').isEqualTo(expected);
+        if (arguments[0] === 'track') {
+          assertThat(arguments[2], 'Event metadata parameters incorrect').isEqualTo(expected);
         }
       };
     });
@@ -1216,18 +1239,7 @@ scenarios:
     runCode(mockData);
 
     // Verify that the tag finished successfully.
-    assertApi('makeTableMap').wasCalledWith(mockData.advancedMatchingParams, 'name', 'value');
     assertApi('gtmOnSuccess').wasCalled();
-- name: Test Event Metadata Purchase
-  code: "mockData = {\n  id: \"t2_potato\",\n  eventType: \"Purchase\",\n  enableFirstPartyCookies:\
-    \ true,\n  itemCount: 1,\n  transactionValue: 1000,\n  currency: \"USD\",\n  transactionId:\
-    \ \"123456789\"\n};\n\nconst expected = {\n  conversionId: undefined,\n  itemCount:\
-    \ 1,\n  value: 1000,\n  currency: 'USD',\n  transactionId: '123456789',\n  partner_version:\
-    \ \"1.0.1\"\n  \n  \n};\n\nmock('copyFromWindow', key => {\n  if (key === 'rdt')\
-    \ return function() {\n    if (arguments[0] === 'track') {\n      assertThat(arguments[2],\
-    \ 'Event metadata parameters incorrect').isEqualTo(expected);\n    }\n  };\n});\n\
-    \n// Call runCode to run the template's code.\nrunCode(mockData);\n\n// Verify\
-    \ that the tag finished successfully.\nassertApi('gtmOnSuccess').wasCalled();"
 - name: Test Event Metadata TransactionId Omission
   code: |-
     mockData = {
@@ -1245,7 +1257,7 @@ scenarios:
       value: 1000,
       currency: 'USD',
       conversionId: undefined,
-      partner_version: "1.0.1"
+      partner_version: "1.0.2",
     };
 
     mock('copyFromWindow', key => {
@@ -1278,7 +1290,7 @@ scenarios:
       value: 1000,
       currency: 'USD',
       conversionId: undefined,
-      partner_version: "1.0.1"
+      partner_version: "1.0.2",
     };
 
     mock('copyFromWindow', key => {
@@ -1368,7 +1380,7 @@ scenarios:
       transactionId: "123456789",
       customEventName: "Subscribe",
       conversionId: undefined,
-      partner_version: "1.0.1"
+      partner_version: "1.0.2",
     };
 
     mock('copyFromWindow', key => {
@@ -1402,7 +1414,7 @@ scenarios:
       value: 1000,
       currency: 'USD',
       conversionId: undefined,
-      partner_version: "1.0.1"
+      partner_version: "1.0.2",
     };
 
     mock('copyFromWindow', key => {
@@ -1424,8 +1436,8 @@ scenarios:
     \ Asada Burrito'}]\n};\n\nconst expected = {\n  currency: undefined,\n  value:\
     \ undefined,\n  itemCount: undefined,\n  conversionId: undefined,\n  products:\
     \ [{'id':'123456789','category':'Food','name':'Carne Asada Burrito'}],\n  partner_version:\
-    \ \"1.0.1\"\n  \n};\n\nmock('copyFromWindow', key => {\n  if (key === 'rdt') return\
-    \ function() {\n    if (arguments[0] === 'track') {\n      assertThat(arguments[2],\
+    \ \"1.0.2\",\n  \n};\n\nmock('copyFromWindow', key => {\n  if (key === 'rdt')\
+    \ return function() {\n    if (arguments[0] === 'track') {\n      assertThat(arguments[2],\
     \ 'Event metadata product parameters incorrect').isEqualTo(expected);\n    }\n\
     \  };\n});\n\n// Call runCode to run the template's code.\nrunCode(mockData);\n\
     \n// Verify that the tag finished successfully.\nassertApi('gtmOnSuccess').wasCalled();"
@@ -1444,7 +1456,7 @@ scenarios:
       value: undefined,
       itemCount: undefined,
       conversionId: undefined,
-      partner_version: "1.0.1"
+      partner_version: "1.0.2",
     };
 
     mock('copyFromWindow', key => {
@@ -1475,7 +1487,7 @@ scenarios:
       value: undefined,
       itemCount: undefined,
       conversionId: undefined,
-      partner_version: "1.0.1"
+      partner_version: "1.0.2",
     };
 
     mock('copyFromWindow', key => {
@@ -1507,7 +1519,7 @@ scenarios:
       itemCount: undefined,
       conversionId: undefined,
       products: '[{"id":"123456789","category":"Food","name":"Carne Asada Burrito"}]',
-      partner_version: "1.0.1"
+      partner_version: "1.0.2",
     };
 
     mock('copyFromWindow', key => {
@@ -1537,7 +1549,7 @@ scenarios:
       currency: undefined,
       transactionId: undefined,
       conversionId: "conversion-id",
-      partner_version: "1.0.1"
+      partner_version: "1.0.2",
     };
 
     mock('copyFromWindow', key => {
@@ -1581,7 +1593,7 @@ scenarios:
       idfa: 'EA7583CD-A667-48BC-B806-42ECB2B48606',
       integration: 'gtm',
       partner: '',
-      partner_version: '1.0.1',
+      partner_version: '1.0.2',
       dpm: 'LDU',
       dpcc: 'US',
       dprc: 'US_CA'
@@ -1613,7 +1625,7 @@ scenarios:
       aaid: 'cdda802e-fb9c-47ad-9866-0794d394c912',
       idfa: 'EA7583CD-A667-48BC-B806-42ECB2B48606',
       partner: '',
-      partner_version: '1.0.1',
+      partner_version: '1.0.2',
       integration: 'gtm',
       dpcc: 'US'
     };
@@ -1655,7 +1667,7 @@ scenarios:
       idfa: 'EA7583CD-A667-48BC-B806-42ECB2B48606',
       integration: 'gtm',
       partner: 'automatic_gtm',
-      partner_version: '1.0.1',
+      partner_version: '1.0.2',
     };
 
 
@@ -1710,7 +1722,7 @@ scenarios:
       idfa: 'EA7583CD-A667-48BC-B806-42ECB2B48606',
       integration: 'gtm',
       partner: '',
-      partner_version: '1.0.1',
+      partner_version: '1.0.2',
       dpm: 'LDU',
       dpcc: 'US',
       dprc: 'US_CA'
@@ -1788,7 +1800,7 @@ scenarios:
       idfa: 'EA7583CD-A667-48BC-B806-42ECB2B48606',
       integration: 'gtm',
       partner: '',
-      partner_version: '1.0.1',
+      partner_version: '1.0.2',
       dpm: 'LDU',
       dpcc: 'US',
       dprc: 'US_CA'
@@ -1802,7 +1814,7 @@ scenarios:
       customEventName: "Subscribe",
       itemCount: 1,
       products: '[{"id":"123456789","category":"Food","name":"Carne Asada Burrito"}]',
-      partner_version: '1.0.1:1',
+      partner_version: '1.0.2:1',
     };
 
     mock('copyFromDataLayer', function(key) {
@@ -1867,7 +1879,7 @@ scenarios:
       idfa: 'EA7583CD-A667-48BC-B806-42ECB2B48606',
       integration: 'gtm',
       partner: '',
-      partner_version: '1.0.1',
+      partner_version: '1.0.2',
       dpm: 'LDU',
       dpcc: 'US',
       dprc: 'US_CA'
@@ -1980,6 +1992,10 @@ scenarios:
         };
     });
 
+    mockData = {
+      useEcommerceProductData: true
+    };
+
     runCode(mockData);
 
     // Assert track call metadata
@@ -2032,6 +2048,10 @@ scenarios:
         };
     });
 
+    mockData = {
+      useEcommerceProductData: true
+    };
+
     runCode(mockData);
 
     // Assert product categories
@@ -2044,7 +2064,7 @@ scenarios:
 
     // Verify success
     assertApi("gtmOnSuccess").wasCalled();
-- name: Test Priority Order
+- name: Test Priority Order - useEcommerceProductData enabled
   code: |
     mockData = {
       id: "t2_reddit",
@@ -2054,6 +2074,7 @@ scenarios:
       itemCount: 5,
       currency: "USD",
       transactionValue: 50,
+      useEcommerceProductData: true,
     };
 
     // Mock both dataLayer products and GA ecommerce
@@ -2091,6 +2112,54 @@ scenarios:
 
     runCode(mockData);
     assertApi("gtmOnSuccess").wasCalled();
+- name: Test Priority Order - useEcommerceProductData disabled
+  code: |
+    mockData = {
+      id: "t2_reddit",
+      eventType: "Purchase",
+      productInputType: "entryManual",
+      productsRows: [{ id: "UI_123", name: "UI Product" }],
+      itemCount: 5,
+      currency: "USD",
+      transactionValue: 50,
+      useEcommerceProductData: false,
+    };
+
+    // Mock both dataLayer products and GA ecommerce
+    mock("copyFromDataLayer", function (key) {
+      if (key === "productsRows")
+        return [{ id: "DL_123", name: "DataLayer Product" }];
+      if (key === "ecommerce")
+        return {
+          currency: "EUR",
+          value: 150,
+          items: [
+            {
+              item_id: "GA_123",
+              item_name: "GA Product",
+              quantity: 3,
+            },
+          ],
+        };
+      return undefined;
+    });
+
+    // Verify ecommerce products are selected over others
+    mock("copyFromWindow", (key) => {
+      if (key === "rdt")
+        return function () {
+          if (arguments[0] === "track") {
+            const metadata = arguments[2];
+            assertThat(metadata.products[0].id).isEqualTo("DL_123");
+            assertThat(metadata.currency).isEqualTo("USD");
+            assertThat(metadata.value).isEqualTo(50);
+            assertThat(metadata.itemCount).isEqualTo(5);
+          }
+        };
+    });
+
+    runCode(mockData);
+    assertApi("gtmOnSuccess").wasCalled();
 - name: Test Priority Order - Multiple Data Sources for Same Fields
   code: |
     mockData = {
@@ -2101,6 +2170,7 @@ scenarios:
       productInputType: "entryManual",
       productsRows: [{ id: "UI_ID", name: "UI Product" }], // UI products
       itemCount: 1, // UI item count
+      useEcommerceProductData: true,
     };
 
     // Set up DataLayer
@@ -2155,19 +2225,19 @@ scenarios:
     runCode(mockData);
     assertApi("gtmOnSuccess").wasCalled();
 - name: Test Priority Order - GA4 over data layer when UI Missing
-  code: "mockData = {\n  id: \"t2_reddit\",\n  eventType: \"Purchase\",\n};\n\n//\
-    \ Set up DataLayer and GA ecommerce \nmock(\"copyFromDataLayer\", function (key)\
-    \ {\n  if (key === \"currency\") return \"EUR\";\n  if (key === \"transactionValue\"\
-    ) return 200; \n  if (key === \"productsRows\") return [{ id: \"DL_ID\", name:\
-    \ \"DL Product\" }];\n  if (key === \"itemCount\") return 2;\n  if (key === \"\
-    ecommerce\")\n    return {\n      currency: \"JPY\",\n      value: 300,\n    \
-    \  items: [\n        {\n          item_id: \"ecommerce_ID\",\n          item_name:\
-    \ \"ecommerce Product\",\n          quantity: 3,\n        },\n      ],\n    };\n\
-    \  return undefined;\n});\n\n// Intercept track call to verify DataLayer values\
-    \ used when UI is missing\nmock(\"copyFromWindow\", (key) => {\n  if (key ===\
-    \ \"rdt\")\n    return function () {\n      if (arguments[0] === \"track\") {\n\
-    \        const metadata = arguments[2];\n\n        // ecommerce values should\
-    \ win over datalayer values\n        assertThat(\n          metadata.currency,\n\
+  code: "mockData = {\n  id: \"t2_reddit\",\n  eventType: \"Purchase\",\n  useEcommerceProductData:\
+    \ true,\n};\n\n// Set up DataLayer and GA ecommerce \nmock(\"copyFromDataLayer\"\
+    , function (key) {\n  if (key === \"currency\") return \"EUR\";\n  if (key ===\
+    \ \"transactionValue\") return 200; \n  if (key === \"productsRows\") return [{\
+    \ id: \"DL_ID\", name: \"DL Product\" }];\n  if (key === \"itemCount\") return\
+    \ 2;\n  if (key === \"ecommerce\")\n    return {\n      currency: \"JPY\",\n \
+    \     value: 300,\n      items: [\n        {\n          item_id: \"ecommerce_ID\"\
+    ,\n          item_name: \"ecommerce Product\",\n          quantity: 3,\n     \
+    \   },\n      ],\n    };\n  return undefined;\n});\n\n// Intercept track call\
+    \ to verify DataLayer values used when UI is missing\nmock(\"copyFromWindow\"\
+    , (key) => {\n  if (key === \"rdt\")\n    return function () {\n      if (arguments[0]\
+    \ === \"track\") {\n        const metadata = arguments[2];\n\n        // ecommerce\
+    \ values should win over datalayer values\n        assertThat(\n          metadata.currency,\n\
     \          \"ecommerce currency should have priority over datalayer\"\n      \
     \  ).isEqualTo(\"JPY\");\n        assertThat(\n          metadata.value,\n   \
     \       \"ecommerce value should have priority over datalayer\"\n        ).isEqualTo(300);\n\
