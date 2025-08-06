@@ -2,9 +2,11 @@ homepage: "https://www.redditinc.com/advertising"
 documentation: "https://reddit.my.site.com/helpcenter/s/article/Install-the-Reddit-Pixel-on-your-website#GTM"
 versions:
   # Latest Version
+  - sha: e04622ef38aba60b2e1fbc7ce90dd2f69c2c2c9b
+    changeNotes: This release updates automatic ecommerce data collection to respect manual product configurations by default, with an explicit checkbox to override this behavior when automatic-only collection is desired.
+  # Older versions
   - sha: 0c60d8d6b51d1599653d1f2727feb63eb9bbee68
     changeNotes: This release updates the template to prioritize Google Analytics ecommerce for product data.
-  # Older versions
   - sha: 0c06f4231e475655a17b2d6cd97e9466e81b4745
     changeNotes: This release updates the template to pull data from Google Analytics ecommerce and user data objects can converts them to Reddit metadata.
   - sha: 5e47b1bc605050916078800dfe850979369ee246
