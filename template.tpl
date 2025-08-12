@@ -259,7 +259,7 @@ ___TEMPLATE_PARAMETERS___
     "name": "conversionId",
     "displayName": "Conversion ID",
     "simpleValueType": true,
-    "help": "Unique Conversion ID that corresponds to a distinct conversion event. Conversion ID is used for deduplication and prevents the same conversion event from being processed more than once if it is sent multiple times."
+    "help": "Unique Conversion ID" that corresponds to a distinct conversion event. Conversion ID is used for deduplication and prevents the same conversion event from being processed more than once if it is sent multiple times."
   },
   {
     "type": "CHECKBOX",
