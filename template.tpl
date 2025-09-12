@@ -615,7 +615,23 @@ var isValidValue = function (val) {
   return val !== undefined && val !== null && val !== "";
 };
 
-eventMetadata.currency = data.currency || (eventModel && eventModel.currency) || (ecommerce && ecommerce.currency) || copyFromDataLayer("currency");
+var EVENTS_WITH_CURRENCY_AND_VALUE = {
+  "AddToCart": true,
+  "add_to_cart": true,
+  "AddToWishlist": true,
+  "add_to_wishlist": true,
+  "Purchase": true,
+  "purchase": true,
+  "Lead": true,
+  "generate_lead": true,
+  "SignUp": true,
+  "sign_up": true,
+  "Custom": true
+};
+
+function hasCurrencyAndValue(eventName) {
+  return !!EVENTS_WITH_CURRENCY_AND_VALUE[eventName];
+}
 
 var value;
 if (isValidValue(data.transactionValue)) {
@@ -629,7 +645,12 @@ if (isValidValue(data.transactionValue)) {
 } else if (eventModel && isValidValue(eventModel.transactionValue)) {
   value = eventModel.transactionValue;
 }
-eventMetadata.value = value;
+
+if (hasCurrencyAndValue(data.eventType)) {
+  eventMetadata.currency = data.currency || (eventModel && eventModel.currency) || (ecommerce && ecommerce.currency) || copyFromDataLayer("currency");
+
+  eventMetadata.value = value;
+}
 
 var formatCategories = function (item) {
   var categories = [];
@@ -1566,8 +1587,6 @@ scenarios:
 
     const expected = {
       itemCount: undefined,
-      value: undefined,
-      currency: undefined,
       transactionId: undefined,
       conversionId: "conversion-id",
       partner_version: "1.0.3",
