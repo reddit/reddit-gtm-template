@@ -500,7 +500,7 @@ var makeNumber = require('makeNumber');
 var JSON = require('JSON');
 var copyFromDataLayer = require("copyFromDataLayer");
 
-const templateVersion = "1.0.2";
+const templateVersion = "1.0.3";
 
 var getRdt = function() {
   var _rdt = copyFromWindow('rdt');
@@ -759,10 +759,24 @@ if (products !== null) {
   eventMetadata.products = products;
 }
 
+var EVENTS_WITH_ITEM_COUNT = {
+  "AddToCart": true,
+  "add_to_cart": true,
+  "AddToWishlist": true,
+  "add_to_wishlist": true,
+  "Purchase": true,
+  "purchase": true,
+  "Custom": true
+};
+
+function hasItemCount(eventName) {
+  return !!EVENTS_WITH_ITEM_COUNT[eventName];
+}
+
 var resolvedItemCount;
 if (itemCount !== null) {
   var parsedItemCount = makeNumber(itemCount);
-  if(data.eventType != "SignUp" && data.eventType != "sign_up" && data.eventType != "Lead" && data.eventType != "generate_lead") {
+  if(hasItemCount(data.eventType)) {
     resolvedItemCount = parsedItemCount;
   }
 }
@@ -1206,7 +1220,7 @@ scenarios:
     \ 'idfa', value: 'EA7583CD-A667-48BC-B806-42ECB2B48606'}\n  ],\n};\n\nconst expected\
     \ = {\n  useDecimalCurrencyValues: true,\n  email: 'alice@example.com',\n  phoneNumber:\
     \ '222-333-4444',\n  aaid: 'cdda802e-fb9c-47ad-9866-0794d394c912',\n  idfa: 'EA7583CD-A667-48BC-B806-42ECB2B48606',\n\
-    \  integration: 'gtm',\n  partner: '',\n  partner_version: '1.0.2',\n};\n\nmock('copyFromWindow',\
+    \  integration: 'gtm',\n  partner: '',\n  partner_version: '1.0.3',\n};\n\nmock('copyFromWindow',\
     \ key => {\n  if (key === 'rdt') return function() {\n     if (arguments[0] ===\
     \ 'init') {\n       const actualArgs = arguments[2];\n       \n       assertThat(actualArgs,\
     \ 'Advanced matching parameters incorrect').isEqualTo(expected);\n    }\n  };\n\
@@ -1231,7 +1245,7 @@ scenarios:
       value: 1000,
       currency: 'USD',
       transactionId: '123456789',
-      partner_version: "1.0.2",
+      partner_version: "1.0.3",
     };
 
     mock('copyFromWindow', key => {
@@ -1264,7 +1278,7 @@ scenarios:
       value: 1000,
       currency: 'USD',
       conversionId: undefined,
-      partner_version: "1.0.2",
+      partner_version: "1.0.3",
     };
 
     mock('copyFromWindow', key => {
@@ -1297,7 +1311,7 @@ scenarios:
       value: 1000,
       currency: 'USD',
       conversionId: undefined,
-      partner_version: "1.0.2",
+      partner_version: "1.0.3",
     };
 
     mock('copyFromWindow', key => {
@@ -1387,7 +1401,7 @@ scenarios:
       transactionId: "123456789",
       customEventName: "Subscribe",
       conversionId: undefined,
-      partner_version: "1.0.2",
+      partner_version: "1.0.3",
     };
 
     mock('copyFromWindow', key => {
@@ -1421,7 +1435,7 @@ scenarios:
       value: 1000,
       currency: 'USD',
       conversionId: undefined,
-      partner_version: "1.0.2",
+      partner_version: "1.0.3",
     };
 
     mock('copyFromWindow', key => {
@@ -1443,7 +1457,7 @@ scenarios:
     \ Asada Burrito'}]\n};\n\nconst expected = {\n  currency: undefined,\n  value:\
     \ undefined,\n  itemCount: undefined,\n  conversionId: undefined,\n  products:\
     \ [{'id':'123456789','category':'Food','name':'Carne Asada Burrito'}],\n  partner_version:\
-    \ \"1.0.2\",\n  \n};\n\nmock('copyFromWindow', key => {\n  if (key === 'rdt')\
+    \ \"1.0.3\",\n  \n};\n\nmock('copyFromWindow', key => {\n  if (key === 'rdt')\
     \ return function() {\n    if (arguments[0] === 'track') {\n      assertThat(arguments[2],\
     \ 'Event metadata product parameters incorrect').isEqualTo(expected);\n    }\n\
     \  };\n});\n\n// Call runCode to run the template's code.\nrunCode(mockData);\n\
@@ -1463,7 +1477,7 @@ scenarios:
       value: undefined,
       itemCount: undefined,
       conversionId: undefined,
-      partner_version: "1.0.2",
+      partner_version: "1.0.3",
     };
 
     mock('copyFromWindow', key => {
@@ -1494,7 +1508,7 @@ scenarios:
       value: undefined,
       itemCount: undefined,
       conversionId: undefined,
-      partner_version: "1.0.2",
+      partner_version: "1.0.3",
     };
 
     mock('copyFromWindow', key => {
@@ -1526,7 +1540,7 @@ scenarios:
       itemCount: undefined,
       conversionId: undefined,
       products: '[{"id":"123456789","category":"Food","name":"Carne Asada Burrito"}]',
-      partner_version: "1.0.2",
+      partner_version: "1.0.3",
     };
 
     mock('copyFromWindow', key => {
@@ -1556,7 +1570,7 @@ scenarios:
       currency: undefined,
       transactionId: undefined,
       conversionId: "conversion-id",
-      partner_version: "1.0.2",
+      partner_version: "1.0.3",
     };
 
     mock('copyFromWindow', key => {
@@ -1600,7 +1614,7 @@ scenarios:
       idfa: 'EA7583CD-A667-48BC-B806-42ECB2B48606',
       integration: 'gtm',
       partner: '',
-      partner_version: '1.0.2',
+      partner_version: '1.0.3',
       dpm: 'LDU',
       dpcc: 'US',
       dprc: 'US_CA'
@@ -1632,7 +1646,7 @@ scenarios:
       aaid: 'cdda802e-fb9c-47ad-9866-0794d394c912',
       idfa: 'EA7583CD-A667-48BC-B806-42ECB2B48606',
       partner: '',
-      partner_version: '1.0.2',
+      partner_version: '1.0.3',
       integration: 'gtm',
       dpcc: 'US'
     };
@@ -1674,7 +1688,7 @@ scenarios:
       idfa: 'EA7583CD-A667-48BC-B806-42ECB2B48606',
       integration: 'gtm',
       partner: 'automatic_gtm',
-      partner_version: '1.0.2',
+      partner_version: '1.0.3',
     };
 
 
@@ -1729,7 +1743,7 @@ scenarios:
       idfa: 'EA7583CD-A667-48BC-B806-42ECB2B48606',
       integration: 'gtm',
       partner: '',
-      partner_version: '1.0.2',
+      partner_version: '1.0.3',
       dpm: 'LDU',
       dpcc: 'US',
       dprc: 'US_CA'
@@ -1743,7 +1757,7 @@ scenarios:
       customEventName: "Subscribe",
       itemCount: 1,
       products: '[{"id":"123456789","category":"Food","name":"Carne Asada Burrito"}]',
-      partner_version: '1.0.0:2',
+      partner_version: '1.0.3:2',
     };
 
     mock('copyFromDataLayer', function(key) {
@@ -1807,7 +1821,7 @@ scenarios:
       idfa: 'EA7583CD-A667-48BC-B806-42ECB2B48606',
       integration: 'gtm',
       partner: '',
-      partner_version: '1.0.2',
+      partner_version: '1.0.3',
       dpm: 'LDU',
       dpcc: 'US',
       dprc: 'US_CA'
@@ -1821,7 +1835,7 @@ scenarios:
       customEventName: "Subscribe",
       itemCount: 1,
       products: '[{"id":"123456789","category":"Food","name":"Carne Asada Burrito"}]',
-      partner_version: '1.0.2:1',
+      partner_version: '1.0.3:1',
     };
 
     mock('copyFromDataLayer', function(key) {
@@ -1886,7 +1900,7 @@ scenarios:
       idfa: 'EA7583CD-A667-48BC-B806-42ECB2B48606',
       integration: 'gtm',
       partner: '',
-      partner_version: '1.0.2',
+      partner_version: '1.0.3',
       dpm: 'LDU',
       dpcc: 'US',
       dprc: 'US_CA'
@@ -2000,6 +2014,7 @@ scenarios:
     });
 
     mockData = {
+      eventType: "AddToCart",
       useEcommerceProductData: true
     };
 
