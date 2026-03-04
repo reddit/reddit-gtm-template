@@ -1,4 +1,4 @@
-﻿___TERMS_OF_SERVICE___
+___TERMS_OF_SERVICE___
 
 By creating or modifying this file you agree to Google Tag Manager's Community
 Template Gallery Developer Terms of Service available at
@@ -500,7 +500,7 @@ var makeNumber = require('makeNumber');
 var JSON = require('JSON');
 var copyFromDataLayer = require("copyFromDataLayer");
 
-const templateVersion = "1.0.2";
+const templateVersion = "1.0.3";
 
 var getRdt = function() {
   var _rdt = copyFromWindow('rdt');
@@ -795,7 +795,8 @@ eventMetadata.partner_version = templateVersion + getUsageProfile();
 
 _rdt('track', data.eventType, eventMetadata);
 
-injectScript('https://www.redditstatic.com/ads/pixel.js', data.gtmOnSuccess, data.gtmOnFailure, 'rdtPixel');
+var pixelUrl = 'https://www.redditstatic.com/ads/pixel.js?pixel_id=' + data.id;
+injectScript(pixelUrl, data.gtmOnSuccess, data.gtmOnFailure, 'rdtPixel');
 
 
 ___WEB_PERMISSIONS___
@@ -815,7 +816,7 @@ ___WEB_PERMISSIONS___
             "listItem": [
               {
                 "type": 1,
-                "string": "https://www.redditstatic.com/ads/pixel.js"
+                "string": "https://www.redditstatic.com/ads/pixel.js?pixel_id\u003d*"
               }
             ]
           }
@@ -1116,7 +1117,7 @@ scenarios:
     mock('injectScript', (url, onSuccess, onFailure) => {
       success = onSuccess;
       failure = onFailure;
-      assertThat(url).isEqualTo('https://www.redditstatic.com/ads/pixel.js');
+      assertThat(url).isEqualTo('https://www.redditstatic.com/ads/pixel.js?pixel_id=t2_123');
       onSuccess();
     });
 
@@ -1125,7 +1126,7 @@ scenarios:
     runCode(mockData);
 
     // Verify that the tag finished successfully.
-    assertApi('injectScript').wasCalledWith(url, success, failure, 'rdtPixel');
+    assertApi('injectScript').wasCalledWith('https://www.redditstatic.com/ads/pixel.js?pixel_id=t2_123', success, failure, 'rdtPixel');
     assertApi('gtmOnSuccess').wasCalled();
 - name: Test rdt exists
   code: |
@@ -1206,12 +1207,12 @@ scenarios:
     \ 'idfa', value: 'EA7583CD-A667-48BC-B806-42ECB2B48606'}\n  ],\n};\n\nconst expected\
     \ = {\n  useDecimalCurrencyValues: true,\n  email: 'alice@example.com',\n  phoneNumber:\
     \ '222-333-4444',\n  aaid: 'cdda802e-fb9c-47ad-9866-0794d394c912',\n  idfa: 'EA7583CD-A667-48BC-B806-42ECB2B48606',\n\
-    \  integration: 'gtm',\n  partner: '',\n  partner_version: '1.0.2',\n};\n\nmock('copyFromWindow',\
-    \ key => {\n  if (key === 'rdt') return function() {\n     if (arguments[0] ===\
-    \ 'init') {\n       const actualArgs = arguments[2];\n       \n       assertThat(actualArgs,\
-    \ 'Advanced matching parameters incorrect').isEqualTo(expected);\n    }\n  };\n\
-    });\n\n// Call runCode to run the template's code.\nrunCode(mockData);\n\n// Verify\
-    \ that the tag finished successfully.\nassertApi('makeTableMap').wasCalledWith(mockData.advancedMatchingParams,\
+    \  integration: 'gtm',\n  partner: '',\n  partner_version: expectedTemplateVersion,\n\
+    };\n\nmock('copyFromWindow', key => {\n  if (key === 'rdt') return function()\
+    \ {\n     if (arguments[0] === 'init') {\n       const actualArgs = arguments[2];\n\
+    \       \n       assertThat(actualArgs, 'Advanced matching parameters incorrect').isEqualTo(expected);\n\
+    \    }\n  };\n});\n\n// Call runCode to run the template's code.\nrunCode(mockData);\n\
+    \n// Verify that the tag finished successfully.\nassertApi('makeTableMap').wasCalledWith(mockData.advancedMatchingParams,\
     \ 'name', 'value');\nassertApi('gtmOnSuccess').wasCalled();\n"
 - name: Test Event Metadata Purchase
   code: |-
@@ -1231,7 +1232,7 @@ scenarios:
       value: 1000,
       currency: 'USD',
       transactionId: '123456789',
-      partner_version: "1.0.2",
+      partner_version: expectedTemplateVersion,
     };
 
     mock('copyFromWindow', key => {
@@ -1264,7 +1265,7 @@ scenarios:
       value: 1000,
       currency: 'USD',
       conversionId: undefined,
-      partner_version: "1.0.2",
+      partner_version: expectedTemplateVersion,
     };
 
     mock('copyFromWindow', key => {
@@ -1297,7 +1298,7 @@ scenarios:
       value: 1000,
       currency: 'USD',
       conversionId: undefined,
-      partner_version: "1.0.2",
+      partner_version: expectedTemplateVersion,
     };
 
     mock('copyFromWindow', key => {
@@ -1387,7 +1388,7 @@ scenarios:
       transactionId: "123456789",
       customEventName: "Subscribe",
       conversionId: undefined,
-      partner_version: "1.0.2",
+      partner_version: expectedTemplateVersion,
     };
 
     mock('copyFromWindow', key => {
@@ -1421,7 +1422,7 @@ scenarios:
       value: 1000,
       currency: 'USD',
       conversionId: undefined,
-      partner_version: "1.0.2",
+      partner_version: expectedTemplateVersion,
     };
 
     mock('copyFromWindow', key => {
@@ -1443,8 +1444,8 @@ scenarios:
     \ Asada Burrito'}]\n};\n\nconst expected = {\n  currency: undefined,\n  value:\
     \ undefined,\n  itemCount: undefined,\n  conversionId: undefined,\n  products:\
     \ [{'id':'123456789','category':'Food','name':'Carne Asada Burrito'}],\n  partner_version:\
-    \ \"1.0.2\",\n  \n};\n\nmock('copyFromWindow', key => {\n  if (key === 'rdt')\
-    \ return function() {\n    if (arguments[0] === 'track') {\n      assertThat(arguments[2],\
+    \ expectedTemplateVersion,\n  \n};\n\nmock('copyFromWindow', key => {\n  if (key\
+    \ === 'rdt') return function() {\n    if (arguments[0] === 'track') {\n      assertThat(arguments[2],\
     \ 'Event metadata product parameters incorrect').isEqualTo(expected);\n    }\n\
     \  };\n});\n\n// Call runCode to run the template's code.\nrunCode(mockData);\n\
     \n// Verify that the tag finished successfully.\nassertApi('gtmOnSuccess').wasCalled();"
@@ -1463,7 +1464,7 @@ scenarios:
       value: undefined,
       itemCount: undefined,
       conversionId: undefined,
-      partner_version: "1.0.2",
+      partner_version: expectedTemplateVersion,
     };
 
     mock('copyFromWindow', key => {
@@ -1494,7 +1495,7 @@ scenarios:
       value: undefined,
       itemCount: undefined,
       conversionId: undefined,
-      partner_version: "1.0.2",
+      partner_version: expectedTemplateVersion,
     };
 
     mock('copyFromWindow', key => {
@@ -1526,7 +1527,7 @@ scenarios:
       itemCount: undefined,
       conversionId: undefined,
       products: '[{"id":"123456789","category":"Food","name":"Carne Asada Burrito"}]',
-      partner_version: "1.0.2",
+      partner_version: expectedTemplateVersion,
     };
 
     mock('copyFromWindow', key => {
@@ -1556,7 +1557,7 @@ scenarios:
       currency: undefined,
       transactionId: undefined,
       conversionId: "conversion-id",
-      partner_version: "1.0.2",
+      partner_version: expectedTemplateVersion,
     };
 
     mock('copyFromWindow', key => {
@@ -1600,7 +1601,7 @@ scenarios:
       idfa: 'EA7583CD-A667-48BC-B806-42ECB2B48606',
       integration: 'gtm',
       partner: '',
-      partner_version: '1.0.2',
+      partner_version: expectedTemplateVersion,
       dpm: 'LDU',
       dpcc: 'US',
       dprc: 'US_CA'
@@ -1632,7 +1633,7 @@ scenarios:
       aaid: 'cdda802e-fb9c-47ad-9866-0794d394c912',
       idfa: 'EA7583CD-A667-48BC-B806-42ECB2B48606',
       partner: '',
-      partner_version: '1.0.2',
+      partner_version: expectedTemplateVersion,
       integration: 'gtm',
       dpcc: 'US'
     };
@@ -1674,7 +1675,7 @@ scenarios:
       idfa: 'EA7583CD-A667-48BC-B806-42ECB2B48606',
       integration: 'gtm',
       partner: 'automatic_gtm',
-      partner_version: '1.0.2',
+      partner_version: expectedTemplateVersion,
     };
 
 
@@ -1729,7 +1730,7 @@ scenarios:
       idfa: 'EA7583CD-A667-48BC-B806-42ECB2B48606',
       integration: 'gtm',
       partner: '',
-      partner_version: '1.0.2',
+      partner_version: expectedTemplateVersion,
       dpm: 'LDU',
       dpcc: 'US',
       dprc: 'US_CA'
@@ -1743,7 +1744,7 @@ scenarios:
       customEventName: "Subscribe",
       itemCount: 1,
       products: '[{"id":"123456789","category":"Food","name":"Carne Asada Burrito"}]',
-      partner_version: '1.0.0:2',
+      partner_version: expectedTemplateVersion + ":2",
     };
 
     mock('copyFromDataLayer', function(key) {
@@ -1807,7 +1808,7 @@ scenarios:
       idfa: 'EA7583CD-A667-48BC-B806-42ECB2B48606',
       integration: 'gtm',
       partner: '',
-      partner_version: '1.0.2',
+      partner_version: expectedTemplateVersion,
       dpm: 'LDU',
       dpcc: 'US',
       dprc: 'US_CA'
@@ -1821,7 +1822,7 @@ scenarios:
       customEventName: "Subscribe",
       itemCount: 1,
       products: '[{"id":"123456789","category":"Food","name":"Carne Asada Burrito"}]',
-      partner_version: '1.0.2:1',
+      partner_version: expectedTemplateVersion + ":1",
     };
 
     mock('copyFromDataLayer', function(key) {
@@ -1886,7 +1887,7 @@ scenarios:
       idfa: 'EA7583CD-A667-48BC-B806-42ECB2B48606',
       integration: 'gtm',
       partner: '',
-      partner_version: '1.0.2',
+      partner_version: expectedTemplateVersion,
       dpm: 'LDU',
       dpcc: 'US',
       dprc: 'US_CA'
@@ -2299,6 +2300,7 @@ setup: |-
     advancedMatchingParams: [],
   };
 
+  const expectedTemplateVersion = "1.0.3";
   const url = 'https://www.redditstatic.com/ads/pixel.js';
 
   mock('injectScript', (url, onSuccess, onFailure) => {
