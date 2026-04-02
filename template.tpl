@@ -524,7 +524,7 @@ var makeNumber = require('makeNumber');
 var JSON = require('JSON');
 var copyFromDataLayer = require("copyFromDataLayer");
 
-const templateVersion = "1.0.3";
+const templateVersion = "1.0.4";
 
 var getRdt = function() {
   var _rdt = copyFromWindow('rdt');
