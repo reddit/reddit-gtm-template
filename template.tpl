@@ -1,4 +1,4 @@
-___TERMS_OF_SERVICE___
+﻿___TERMS_OF_SERVICE___
 
 By creating or modifying this file you agree to Google Tag Manager's Community
 Template Gallery Developer Terms of Service available at
@@ -457,6 +457,30 @@ ___TEMPLATE_PARAMETERS___
             "type": "TEXT",
             "valueHint": "For example, Google\u0027s product taxonomy",
             "isUnique": false
+          },
+          {
+            "defaultValue": "",
+            "displayName": "Item Price",
+            "name": "itemPrice",
+            "type": "TEXT",
+            "valueHint": "The unit price.",
+            "valueValidators": [
+              {
+                "type": "NON_NEGATIVE_NUMBER"
+              }
+            ]
+          },
+          {
+            "defaultValue": "",
+            "displayName": "Quantity",
+            "name": "quantity",
+            "type": "TEXT",
+            "valueHint": "The number of units of this product.",
+            "valueValidators": [
+              {
+                "type": "NON_NEGATIVE_NUMBER"
+              }
+            ]
           }
         ],
         "help": "The Product ID and Product Category are required, but the Product Name is optional.",
@@ -480,7 +504,7 @@ ___TEMPLATE_PARAMETERS___
             "type": "EQUALS"
           }
         ],
-        "help": "The Product ID and Product Category are required, but the Product Name is optional. Format: [ { \"id\": \"Product_ID\", \"name\": \"Product_Name\",  \"category\": \"Product_Category\" }, ... ]"
+        "help": "The Product ID and Product Category are required, but the Product Name, Price or Quanitty are optional. Format: [ { \"id\": \"Product_ID\", \"name\": \"Product_Name\",  \"category\": \"Product_Category\" , \"itemPrice\":199,  \"quantity\": 1}, ... ]"
       }
     ],
     "groupStyle": "ZIPPY_CLOSED"
@@ -672,6 +696,12 @@ var processEcommerceItems = function () {
       if (item.quantity !== undefined && item.quantity !== null) {
         var parsedQuantity = makeNumber(item.quantity);
         quantity = parsedQuantity;
+        product.quantity = parsedQuantity;
+      }
+      
+      if (item.price !== undefined && item.price !== null) {
+        var parsedPrice = makeNumber(item.price);
+        product.itemPrice = parsedPrice;
       }
 
       processedItemCount += quantity;
