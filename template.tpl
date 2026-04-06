@@ -464,11 +464,7 @@ ___TEMPLATE_PARAMETERS___
             "name": "itemPrice",
             "type": "TEXT",
             "valueHint": "The unit price.",
-            "valueValidators": [
-              {
-                "type": "NON_NEGATIVE_NUMBER"
-              }
-            ]
+            "valueValidators": []
           },
           {
             "defaultValue": "",
@@ -476,11 +472,7 @@ ___TEMPLATE_PARAMETERS___
             "name": "quantity",
             "type": "TEXT",
             "valueHint": "The number of units of this product.",
-            "valueValidators": [
-              {
-                "type": "NON_NEGATIVE_NUMBER"
-              }
-            ]
+            "valueValidators": []
           }
         ],
         "help": "The Product ID and Product Category are required, but the Product Name is optional.",
@@ -521,6 +513,8 @@ var callInWindow = require('callInWindow');
 var createQueue = require('createQueue');
 var makeTableMap = require('makeTableMap');
 var makeNumber = require('makeNumber');
+var getType = require('getType');
+var logToConsole = require('logToConsole');
 var JSON = require('JSON');
 var copyFromDataLayer = require("copyFromDataLayer");
 
@@ -751,6 +745,7 @@ var getProductData = function () {
   }
 
   // Fallback to product data configured in the tag UI
+  logToConsole(data.productInputType);
   if (
     data.productInputType == "entryManual" &&
     data.productsRows &&
@@ -758,14 +753,66 @@ var getProductData = function () {
   ) {
     // The simple table is of the correct format - an array of objects.
     // We can assign it directly.
-    return { products: data.productsRows, itemCount: itemCount };
+    var manualProducts = [];
+
+    for (var i = 0; i < data.productsRows.length; i++) {
+          var p = data.productsRows[i];
+          var copy = {
+            id: p.id,
+            name: p.name,
+            category: p.category
+          };
+          if (getType(p.quantity) === "number") {
+            copy.quantity = makeNumber(p.quantity);
+          }
+          if (getType(p.itemPrice) === "number") {
+            copy.itemPrice = makeNumber(p.itemPrice);
+          }
+
+          manualProducts.push(copy);
+        }
+        return { products: manualProducts, itemCount: itemCount };
   }
   if (
     data.productInputType == "entryJSON" &&
     data.productsJSON &&
     data.productsJSON.length > 0
   ) {
-    return { products: data.productsJSON, itemCount: itemCount };
+    var rawJson = JSON.parse(data.productsJSON);
+
+    logToConsole(getType(rawJson));
+    if (getType(rawJson) === 'array') {
+      for (var j = 0; j < rawJson.length; j++) {
+        logToConsole(getType(rawJson[j].quantity));
+        if (getType(rawJson[j].quantity) === "number") {
+          rawJson[j].quantity = makeNumber(rawJson[j].quantity);
+        } else {
+          rawJson[j].quantity = undefined;
+        }
+
+        if (getType(rawJson[j].itemPrice) === "number") {
+          rawJson[j].itemPrice = makeNumber(rawJson[j].itemPrice);
+        } else {
+          rawJson[j].itemPrice = undefined;
+        }
+
+      }
+    } else if (getType(rawJson) === 'object') {
+        if (getType(rawJson.quantity) === "number") {
+          rawJson.quantity = makeNumber(rawJson.quantity);
+        } else {
+          rawJson.quantity = undefined;
+        }
+
+        if (getType(rawJson.itemPrice) === "number") {
+          rawJson.itemPrice = makeNumber(rawJson.itemPrice);
+        } else {
+          rawJson.itemPrice = undefined;
+        }
+    }
+
+        logToConsole(rawJson);
+    return { products: rawJson, itemCount: itemCount };
   }
 
   // Fall back to automatic ecommerce collection if no manual config found
@@ -823,6 +870,7 @@ if (data.conversionId) {
 
 eventMetadata.partner_version = templateVersion + getUsageProfile();
 
+logToConsole(eventMetadata);
 _rdt('track', data.eventType, eventMetadata);
 
 var pixelUrl = 'https://www.redditstatic.com/ads/pixel.js?pixel_id=' + data.id;
@@ -2043,8 +2091,8 @@ scenarios:
     assertThat(metadata.value).isEqualTo(55.99);
     assertThat(metadata.itemCount).isEqualTo(4); // 2 + 1 + 1 (SKU3 - if quantity not provided, we set to 1
     assertThat(metadata.products).isEqualTo([
-      { id: "SKU1", name: "Product A" },
-      { id: "SKU2", name: "Product B" },
+      { id: "SKU1", name: "Product A", quantity: 1 },
+      { id: "SKU2", name: "Product B", quantity: 2},
       { id: "SKU3", name: "Product C" },
     ]);
 
