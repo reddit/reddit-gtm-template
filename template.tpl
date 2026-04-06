@@ -2330,7 +2330,7 @@ setup: |-
     advancedMatchingParams: [],
   };
 
-  const expectedTemplateVersion = "1.0.3";
+  const expectedTemplateVersion = "1.0.4";
   const url = 'https://www.redditstatic.com/ads/pixel.js';
 
   mock('injectScript', (url, onSuccess, onFailure) => {
