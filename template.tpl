@@ -756,22 +756,32 @@ var getProductData = function () {
     var manualProducts = [];
 
     for (var i = 0; i < data.productsRows.length; i++) {
-          var p = data.productsRows[i];
-          var copy = {
-            id: p.id,
-            name: p.name,
-            category: p.category
-          };
-          if (getType(p.quantity) === "number") {
-            copy.quantity = makeNumber(p.quantity);
-          }
-          if (getType(p.itemPrice) === "number") {
-            copy.itemPrice = makeNumber(p.itemPrice);
-          }
+      var p = data.productsRows[i];
+      var copy = {
+        id: p.id,
+        name: p.name,
+        category: p.category
+      };
 
-          manualProducts.push(copy);
-        }
-        return { products: manualProducts, itemCount: itemCount };
+      var parsedQty = makeNumber(p.quantity);
+      logToConsole("parsedQty");
+      logToConsole(parsedQty);
+      if (parsedQty !== undefined && parsedQty !== null && parsedQty >= 0) {
+        copy.quantity = parsedQty;
+      }
+
+      var parsedPrice = makeNumber(p.itemPrice);
+      logToConsole("parsedPrice");
+      logToConsole(parsedPrice);
+        logToConsole(parsedPrice >= 0);
+        logToConsole(getType(parsedPrice));
+      if (parsedPrice !== undefined && parsedPrice !== null && parsedPrice >= 0) {
+        copy.itemPrice = parsedPrice;
+      }
+
+      manualProducts.push(copy);
+    }
+    return { products: manualProducts, itemCount: itemCount };
   }
   if (
     data.productInputType == "entryJSON" &&
@@ -783,32 +793,26 @@ var getProductData = function () {
     logToConsole(getType(rawJson));
     if (getType(rawJson) === 'array') {
       for (var j = 0; j < rawJson.length; j++) {
-        logToConsole(getType(rawJson[j].quantity));
-        if (getType(rawJson[j].quantity) === "number") {
-          rawJson[j].quantity = makeNumber(rawJson[j].quantity);
-        } else {
-          rawJson[j].quantity = undefined;
+        var parsedQty = makeNumber(rawJson[j].quantity);
+        if (parsedQty !== undefined && parsedQty !== null && parsedQty >= 0) {
+          rawJson[j].quantity = parsedQty;
         }
 
-        if (getType(rawJson[j].itemPrice) === "number") {
-          rawJson[j].itemPrice = makeNumber(rawJson[j].itemPrice);
-        } else {
-          rawJson[j].itemPrice = undefined;
+        var parsedPrice = makeNumber(rawJson[j].itemPrice);
+        if (parsedPrice !== undefined && parsedPrice !== null && parsedPrice >= 0) {
+          rawJson[j].itemPrice = parsedPrice;
         }
-
       }
     } else if (getType(rawJson) === 'object') {
-        if (getType(rawJson.quantity) === "number") {
-          rawJson.quantity = makeNumber(rawJson.quantity);
-        } else {
-          rawJson.quantity = undefined;
-        }
+      var parsedQty = makeNumber(rawJson.quantity);
+      if (parsedQty !== undefined && parsedQty !== null && parsedQty >= 0) {
+        rawJson.quantity = parsedQty;
+      }
 
-        if (getType(rawJson.itemPrice) === "number") {
-          rawJson.itemPrice = makeNumber(rawJson.itemPrice);
-        } else {
-          rawJson.itemPrice = undefined;
-        }
+      var parsedPrice = makeNumber(rawJson.itemPrice);
+      if (parsedPrice !== undefined && parsedPrice !== null && parsedPrice >= 0) {
+        rawJson.itemPrice = parsedPrice;
+      }
     }
 
         logToConsole(rawJson);
