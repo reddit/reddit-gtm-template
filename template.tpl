@@ -514,7 +514,6 @@ var createQueue = require('createQueue');
 var makeTableMap = require('makeTableMap');
 var makeNumber = require('makeNumber');
 var getType = require('getType');
-var logToConsole = require('logToConsole');
 var JSON = require('JSON');
 var copyFromDataLayer = require("copyFromDataLayer");
 
@@ -745,7 +744,6 @@ var getProductData = function () {
   }
 
   // Fallback to product data configured in the tag UI
-  logToConsole(data.productInputType);
   if (
     data.productInputType == "entryManual" &&
     data.productsRows &&
@@ -764,17 +762,11 @@ var getProductData = function () {
       };
 
       var parsedQty = makeNumber(p.quantity);
-      logToConsole("parsedQty");
-      logToConsole(parsedQty);
       if (parsedQty !== undefined && parsedQty !== null && parsedQty >= 0) {
         copy.quantity = parsedQty;
       }
 
       var parsedPrice = makeNumber(p.itemPrice);
-      logToConsole("parsedPrice");
-      logToConsole(parsedPrice);
-        logToConsole(parsedPrice >= 0);
-        logToConsole(getType(parsedPrice));
       if (parsedPrice !== undefined && parsedPrice !== null && parsedPrice >= 0) {
         copy.itemPrice = parsedPrice;
       }
@@ -790,32 +782,46 @@ var getProductData = function () {
   ) {
     var rawJson = JSON.parse(data.productsJSON);
 
-    logToConsole(getType(rawJson));
     if (getType(rawJson) === 'array') {
       for (var j = 0; j < rawJson.length; j++) {
-        var parsedQty = makeNumber(rawJson[j].quantity);
-        if (parsedQty !== undefined && parsedQty !== null && parsedQty >= 0) {
-          rawJson[j].quantity = parsedQty;
+        if (rawJson[j].quantity != undefined) {
+          var parsedQty = makeNumber(rawJson[j].quantity);
+          if (parsedQty !== undefined && parsedQty !== null && parsedQty >= 0) {
+            rawJson[j].quantity = parsedQty;
+          } else {
+            rawJson[j].quantity = undefined;
+          }
         }
 
-        var parsedPrice = makeNumber(rawJson[j].itemPrice);
-        if (parsedPrice !== undefined && parsedPrice !== null && parsedPrice >= 0) {
-          rawJson[j].itemPrice = parsedPrice;
+        if (rawJson[j].itemPrice != undefined) {
+          var parsedPrice = makeNumber(rawJson[j].itemPrice);
+          if (parsedPrice !== undefined && parsedPrice !== null && parsedPrice >= 0) {
+            rawJson[j].itemPrice = parsedPrice;
+          } else {
+            rawJson[j].itemPrice = undefined;
+          }
         }
       }
     } else if (getType(rawJson) === 'object') {
-      var parsedQty = makeNumber(rawJson.quantity);
-      if (parsedQty !== undefined && parsedQty !== null && parsedQty >= 0) {
-        rawJson.quantity = parsedQty;
+      if (rawJson.quantity) {
+        var parsedQty = makeNumber(rawJson.quantity);
+        if (parsedQty !== undefined && parsedQty !== null && parsedQty >= 0) {
+          rawJson.quantity = parsedQty;
+        } else {
+          rawJson.quantity = undefined;
+        }
       }
 
-      var parsedPrice = makeNumber(rawJson.itemPrice);
-      if (parsedPrice !== undefined && parsedPrice !== null && parsedPrice >= 0) {
-        rawJson.itemPrice = parsedPrice;
+      if (rawJson.itemPrice) {
+        var parsedPrice = makeNumber(rawJson.itemPrice);
+        if (parsedPrice !== undefined && parsedPrice !== null && parsedPrice >= 0) {
+          rawJson.itemPrice = parsedPrice;
+        } else {
+          rawJson.itemPrice = undefined;
+        }
       }
     }
 
-        logToConsole(rawJson);
     return { products: rawJson, itemCount: itemCount };
   }
 
@@ -874,7 +880,6 @@ if (data.conversionId) {
 
 eventMetadata.partner_version = templateVersion + getUsageProfile();
 
-logToConsole(eventMetadata);
 _rdt('track', data.eventType, eventMetadata);
 
 var pixelUrl = 'https://www.redditstatic.com/ads/pixel.js?pixel_id=' + data.id;
@@ -1184,6 +1189,24 @@ ___WEB_PERMISSIONS___
     },
     "clientAnnotations": {
       "isEditedByUser": true
+    },
+    "isRequired": true
+  },
+  {
+    "instance": {
+      "key": {
+        "publicId": "logging",
+        "versionId": "1"
+      },
+      "param": [
+        {
+          "key": "environments",
+          "value": {
+            "type": 1,
+            "string": "debug"
+          }
+        }
+      ]
     },
     "isRequired": true
   }
@@ -1608,7 +1631,7 @@ scenarios:
       value: undefined,
       itemCount: undefined,
       conversionId: undefined,
-      products: '[{"id":"123456789","category":"Food","name":"Carne Asada Burrito"}]',
+      products: [{"id":"123456789","category":"Food","name":"Carne Asada Burrito"}],
       partner_version: expectedTemplateVersion,
     };
 
@@ -2373,6 +2396,44 @@ scenarios:
 
     runCode(mockData);
     assertApi("gtmOnSuccess").wasCalled();
+- name: Test Invalid Itemprice and Quantity
+  code: "mockData = {\n  id: \"t2_potato\",\n  eventType: \"AddToCart\",\n  enableFirstPartyCookies:\
+    \ true,\n  productInputType: \"entryManual\",\n  productsRows: [{'id':'123456789','category':'Food','name':'Carne\
+    \ Asada Burrito', \"itemPrice\": \"asd\", \"quantity\": \"asd\"}, {'id':'123456789','category':'Food','name':'Carne\
+    \ Asada Burrito', \"itemPrice\": \"5\", \"quantity\": \"4\"}, {'id':'123456789','category':'Food','name':'Carne\
+    \ Asada Burrito', \"itemPrice\": \"-4\", \"quantity\": \"-3\"}, {'id':'123456789','category':'Food','name':'Carne\
+    \ Asada Burrito', \"itemPrice\": 2, \"quantity\": -1}]\n};\n\nconst expected =\
+    \ {\n  currency: undefined,\n  value: undefined,\n  itemCount: undefined,\n  conversionId:\
+    \ undefined,\n  products: [{'id':'123456789','category':'Food','name':'Carne Asada\
+    \ Burrito'}, {'id':'123456789','category':'Food','name':'Carne Asada Burrito',\
+    \ \"itemPrice\": 5, \"quantity\": 4}, {'id':'123456789','category':'Food','name':'Carne\
+    \ Asada Burrito'}, {'id':'123456789','category':'Food','name':'Carne Asada Burrito',\
+    \ \"itemPrice\": 2}],\n  partner_version: expectedTemplateVersion,\n  \n};\n\n\
+    mock('copyFromWindow', key => {\n  if (key === 'rdt') return function() {\n  \
+    \  if (arguments[0] === 'track') {\n      assertThat(arguments[2], 'Event metadata\
+    \ product parameters incorrect').isEqualTo(expected);\n    }\n  };\n});\n\n//\
+    \ Call runCode to run the template's code.\nrunCode(mockData);\n\n// Verify that\
+    \ the tag finished successfully.\nassertApi('gtmOnSuccess').wasCalled();"
+- name: Test Invalid Itemprice and Quantity JSON
+  code: "mockData = {\n  id: \"t2_potato\",\n  eventType: \"AddToCart\",\n  enableFirstPartyCookies:\
+    \ true,\n  productInputType: \"entryJSON\",\n  productsJSON: '[{\"id\": \"123456789\"\
+    ,\"category\": \"Food\",\"name\": \"Carne Asada Burrito\",\"itemPrice\": \"asd\"\
+    ,\"quantity\": \"asd\"},{\"id\": \"123456789\",\"category\": \"Food\",\"name\"\
+    : \"Carne Asada Burrito\",\"itemPrice\": \"5\",\"quantity\": \"4\"},{\"id\": \"\
+    123456789\",\"category\": \"Food\",\"name\": \"Carne Asada Burrito\",\"itemPrice\"\
+    : \"-4\",\"quantity\": \"-3\"},{\"id\": \"123456789\",\"category\": \"Food\",\"\
+    name\": \"Carne Asada Burrito\",\"itemPrice\": 2,\"quantity\": -1}]'\n};\n\nconst\
+    \ expected = {\n  currency: undefined,\n  value: undefined,\n  itemCount: undefined,\n\
+    \  conversionId: undefined,\n  products: [{'id':'123456789','category':'Food','name':'Carne\
+    \ Asada Burrito', 'itemPrice': undefined, \"quantity\": undefined}, {'id':'123456789','category':'Food','name':'Carne\
+    \ Asada Burrito', \"itemPrice\": 5, \"quantity\": 4}, {'id':'123456789','category':'Food','name':'Carne\
+    \ Asada Burrito', 'itemPrice': undefined, \"quantity\": undefined}, {'id':'123456789','category':'Food','name':'Carne\
+    \ Asada Burrito', \"itemPrice\": 2, \"quantity\": undefined}],\n  partner_version:\
+    \ expectedTemplateVersion,\n  \n};\n\nmock('copyFromWindow', key => {\n  if (key\
+    \ === 'rdt') return function() {\n    if (arguments[0] === 'track') {\n      assertThat(arguments[2],\
+    \ 'Event metadata product parameters incorrect').isEqualTo(expected);\n    }\n\
+    \  };\n});\n\n// Call runCode to run the template's code.\nrunCode(mockData);\n\
+    \n// Verify that the tag finished successfully.\nassertApi('gtmOnSuccess').wasCalled();"
 setup: |-
   let mockData = {
     id: 't2_123',
