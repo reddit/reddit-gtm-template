@@ -496,7 +496,7 @@ ___TEMPLATE_PARAMETERS___
             "type": "EQUALS"
           }
         ],
-        "help": "The Product ID and Product Category are required, but the Product Name, Price, and Quanitty are optional. Format: [ { \"id\": \"Product_ID\", \"name\": \"Product_Name\",  \"category\": \"Product_Category\" , \"itemPrice\":199,  \"quantity\": 1}, ... ]"
+        "help": "The Product ID and Product Category are required, but the Product Name, Price, and Quantity are optional. Format: [ { \"id\": \"Product_ID\", \"name\": \"Product_Name\",  \"category\": \"Product_Category\" , \"itemPrice\":199,  \"quantity\": 1}, ... ]"
       }
     ],
     "groupStyle": "ZIPPY_CLOSED"
