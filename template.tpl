@@ -496,7 +496,7 @@ ___TEMPLATE_PARAMETERS___
             "type": "EQUALS"
           }
         ],
-        "help": "The Product ID and Product Category are required, but the Product Name, Price or Quanitty are optional. Format: [ { \"id\": \"Product_ID\", \"name\": \"Product_Name\",  \"category\": \"Product_Category\" , \"itemPrice\":199,  \"quantity\": 1}, ... ]"
+        "help": "The Product ID and Product Category are required, but the Product Name, Price, and Quanitty are optional. Format: [ { \"id\": \"Product_ID\", \"name\": \"Product_Name\",  \"category\": \"Product_Category\" , \"itemPrice\":199,  \"quantity\": 1}, ... ]"
       }
     ],
     "groupStyle": "ZIPPY_CLOSED"
@@ -712,6 +712,29 @@ var processEcommerceItems = function () {
   return { products: [], itemCount: 0, foundItems: false };
 };
 
+var normalizeProduct = function (product) {
+  if (!product) return product;
+  
+  var cleaned = {};
+  // Carry over all non-numeric fields as-is
+  if (product.id !== undefined) cleaned.id = product.id;
+  if (product.name !== undefined) cleaned.name = product.name;
+  if (product.category !== undefined) cleaned.category = product.category;
+
+  // Only include quantity/itemPrice if they parse to a valid number
+  var parsedQty = makeNumber(product.quantity);
+  if (parsedQty !== undefined && parsedQty !== null && parsedQty >= 0) {
+    cleaned.quantity = parsedQty;
+  }
+
+  var parsedPrice = makeNumber(product.itemPrice);
+  if (parsedPrice !== undefined && parsedPrice !== null && parsedPrice >= 0) {
+    cleaned.itemPrice = parsedPrice;
+  }
+
+  return cleaned;
+};
+
 var getProductData = function () {
   var itemCount =
     data.itemCount ||
@@ -755,23 +778,7 @@ var getProductData = function () {
 
     for (var i = 0; i < data.productsRows.length; i++) {
       var p = data.productsRows[i];
-      var copy = {
-        id: p.id,
-        name: p.name,
-        category: p.category
-      };
-
-      var parsedQty = makeNumber(p.quantity);
-      if (parsedQty !== undefined && parsedQty !== null && parsedQty >= 0) {
-        copy.quantity = parsedQty;
-      }
-
-      var parsedPrice = makeNumber(p.itemPrice);
-      if (parsedPrice !== undefined && parsedPrice !== null && parsedPrice >= 0) {
-        copy.itemPrice = parsedPrice;
-      }
-
-      manualProducts.push(copy);
+      manualProducts.push(normalizeProduct(p));
     }
     return { products: manualProducts, itemCount: itemCount };
   }
@@ -784,42 +791,10 @@ var getProductData = function () {
 
     if (getType(rawJson) === 'array') {
       for (var j = 0; j < rawJson.length; j++) {
-        if (rawJson[j].quantity != undefined) {
-          var parsedQty = makeNumber(rawJson[j].quantity);
-          if (parsedQty !== undefined && parsedQty !== null && parsedQty >= 0) {
-            rawJson[j].quantity = parsedQty;
-          } else {
-            rawJson[j].quantity = undefined;
-          }
-        }
-
-        if (rawJson[j].itemPrice != undefined) {
-          var parsedPrice = makeNumber(rawJson[j].itemPrice);
-          if (parsedPrice !== undefined && parsedPrice !== null && parsedPrice >= 0) {
-            rawJson[j].itemPrice = parsedPrice;
-          } else {
-            rawJson[j].itemPrice = undefined;
-          }
-        }
+        rawJson[j] = normalizeProduct(rawJson[j]);
       }
     } else if (getType(rawJson) === 'object') {
-      if (rawJson.quantity) {
-        var parsedQty = makeNumber(rawJson.quantity);
-        if (parsedQty !== undefined && parsedQty !== null && parsedQty >= 0) {
-          rawJson.quantity = parsedQty;
-        } else {
-          rawJson.quantity = undefined;
-        }
-      }
-
-      if (rawJson.itemPrice) {
-        var parsedPrice = makeNumber(rawJson.itemPrice);
-        if (parsedPrice !== undefined && parsedPrice !== null && parsedPrice >= 0) {
-          rawJson.itemPrice = parsedPrice;
-        } else {
-          rawJson.itemPrice = undefined;
-        }
-      }
+      rawJson = normalizeProduct(rawJson);
     }
 
     return { products: rawJson, itemCount: itemCount };
@@ -1189,24 +1164,6 @@ ___WEB_PERMISSIONS___
     },
     "clientAnnotations": {
       "isEditedByUser": true
-    },
-    "isRequired": true
-  },
-  {
-    "instance": {
-      "key": {
-        "publicId": "logging",
-        "versionId": "1"
-      },
-      "param": [
-        {
-          "key": "environments",
-          "value": {
-            "type": 1,
-            "string": "debug"
-          }
-        }
-      ]
     },
     "isRequired": true
   }
@@ -2425,15 +2382,15 @@ scenarios:
     name\": \"Carne Asada Burrito\",\"itemPrice\": 2,\"quantity\": -1}]'\n};\n\nconst\
     \ expected = {\n  currency: undefined,\n  value: undefined,\n  itemCount: undefined,\n\
     \  conversionId: undefined,\n  products: [{'id':'123456789','category':'Food','name':'Carne\
-    \ Asada Burrito', 'itemPrice': undefined, \"quantity\": undefined}, {'id':'123456789','category':'Food','name':'Carne\
-    \ Asada Burrito', \"itemPrice\": 5, \"quantity\": 4}, {'id':'123456789','category':'Food','name':'Carne\
-    \ Asada Burrito', 'itemPrice': undefined, \"quantity\": undefined}, {'id':'123456789','category':'Food','name':'Carne\
-    \ Asada Burrito', \"itemPrice\": 2, \"quantity\": undefined}],\n  partner_version:\
-    \ expectedTemplateVersion,\n  \n};\n\nmock('copyFromWindow', key => {\n  if (key\
-    \ === 'rdt') return function() {\n    if (arguments[0] === 'track') {\n      assertThat(arguments[2],\
-    \ 'Event metadata product parameters incorrect').isEqualTo(expected);\n    }\n\
-    \  };\n});\n\n// Call runCode to run the template's code.\nrunCode(mockData);\n\
-    \n// Verify that the tag finished successfully.\nassertApi('gtmOnSuccess').wasCalled();"
+    \ Asada Burrito'}, {'id':'123456789','category':'Food','name':'Carne Asada Burrito',\
+    \ \"itemPrice\": 5, \"quantity\": 4}, {'id':'123456789','category':'Food','name':'Carne\
+    \ Asada Burrito'}, {'id':'123456789','category':'Food','name':'Carne Asada Burrito',\
+    \ \"itemPrice\": 2}],\n  partner_version: expectedTemplateVersion,\n  \n};\n\n\
+    mock('copyFromWindow', key => {\n  if (key === 'rdt') return function() {\n  \
+    \  if (arguments[0] === 'track') {\n      assertThat(arguments[2], 'Event metadata\
+    \ product parameters incorrect').isEqualTo(expected);\n    }\n  };\n});\n\n//\
+    \ Call runCode to run the template's code.\nrunCode(mockData);\n\n// Verify that\
+    \ the tag finished successfully.\nassertApi('gtmOnSuccess').wasCalled();"
 setup: |-
   let mockData = {
     id: 't2_123',
