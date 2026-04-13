@@ -2,7 +2,7 @@ homepage: "https://www.redditinc.com/advertising"
 documentation: "https://reddit.my.site.com/helpcenter/s/article/Install-the-Reddit-Pixel-on-your-website#GTM"
 versions:
   # Latest Version
-  - sha: 90e0d666582886e5fffcbc7462d79e9e9c4b20e3
+  - sha: 4e135cad1fdc92eb9173201cdf91fa9522578ef6
     changeNotes: This release adds product level itemPrice and quantity attributes.
   # Older versions
   - sha: 59e40dfdd51568e5e1873ca2e32b42d26093e311
