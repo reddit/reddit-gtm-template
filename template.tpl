@@ -1,4 +1,4 @@
-___TERMS_OF_SERVICE___
+﻿___TERMS_OF_SERVICE___
 
 By creating or modifying this file you agree to Google Tag Manager's Community
 Template Gallery Developer Terms of Service available at
@@ -457,6 +457,22 @@ ___TEMPLATE_PARAMETERS___
             "type": "TEXT",
             "valueHint": "For example, Google\u0027s product taxonomy",
             "isUnique": false
+          },
+          {
+            "defaultValue": "",
+            "displayName": "Item Price",
+            "name": "itemPrice",
+            "type": "TEXT",
+            "valueHint": "The unit price.",
+            "valueValidators": []
+          },
+          {
+            "defaultValue": "",
+            "displayName": "Quantity",
+            "name": "quantity",
+            "type": "TEXT",
+            "valueHint": "The number of units of this product.",
+            "valueValidators": []
           }
         ],
         "help": "The Product ID and Product Category are required, but the Product Name is optional.",
@@ -480,7 +496,7 @@ ___TEMPLATE_PARAMETERS___
             "type": "EQUALS"
           }
         ],
-        "help": "The Product ID and Product Category are required, but the Product Name is optional. Format: [ { \"id\": \"Product_ID\", \"name\": \"Product_Name\",  \"category\": \"Product_Category\" }, ... ]"
+        "help": "The Product ID and Product Category are required, but the Product Name, Price, and Quantity are optional. Format: [ { \"id\": \"Product_ID\", \"name\": \"Product_Name\",  \"category\": \"Product_Category\" , \"itemPrice\":199,  \"quantity\": 1}, ... ]"
       }
     ],
     "groupStyle": "ZIPPY_CLOSED"
@@ -497,10 +513,11 @@ var callInWindow = require('callInWindow');
 var createQueue = require('createQueue');
 var makeTableMap = require('makeTableMap');
 var makeNumber = require('makeNumber');
+var getType = require('getType');
 var JSON = require('JSON');
 var copyFromDataLayer = require("copyFromDataLayer");
 
-const templateVersion = "1.0.3";
+const templateVersion = "1.0.4";
 
 var getRdt = function() {
   var _rdt = copyFromWindow('rdt');
@@ -672,6 +689,12 @@ var processEcommerceItems = function () {
       if (item.quantity !== undefined && item.quantity !== null) {
         var parsedQuantity = makeNumber(item.quantity);
         quantity = parsedQuantity;
+        product.quantity = parsedQuantity;
+      }
+      
+      if (item.price !== undefined && item.price !== null) {
+        var parsedPrice = makeNumber(item.price);
+        product.itemPrice = parsedPrice;
       }
 
       processedItemCount += quantity;
@@ -687,6 +710,29 @@ var processEcommerceItems = function () {
   }
   // Return default if no items found, array was empty, or no valid products resulted
   return { products: [], itemCount: 0, foundItems: false };
+};
+
+var normalizeProduct = function (product) {
+  if (!product) return product;
+  
+  var cleaned = {};
+  // Carry over all non-numeric fields as-is
+  if (product.id !== undefined) cleaned.id = product.id;
+  if (product.name !== undefined) cleaned.name = product.name;
+  if (product.category !== undefined) cleaned.category = product.category;
+
+  // Only include quantity/itemPrice if they parse to a valid number
+  var parsedQty = makeNumber(product.quantity);
+  if (parsedQty !== undefined && parsedQty !== null && parsedQty >= 0) {
+    cleaned.quantity = parsedQty;
+  }
+
+  var parsedPrice = makeNumber(product.itemPrice);
+  if (parsedPrice !== undefined && parsedPrice !== null && parsedPrice >= 0) {
+    cleaned.itemPrice = parsedPrice;
+  }
+
+  return cleaned;
 };
 
 var getProductData = function () {
@@ -728,14 +774,30 @@ var getProductData = function () {
   ) {
     // The simple table is of the correct format - an array of objects.
     // We can assign it directly.
-    return { products: data.productsRows, itemCount: itemCount };
+    var manualProducts = [];
+
+    for (var i = 0; i < data.productsRows.length; i++) {
+      var p = data.productsRows[i];
+      manualProducts.push(normalizeProduct(p));
+    }
+    return { products: manualProducts, itemCount: itemCount };
   }
   if (
     data.productInputType == "entryJSON" &&
     data.productsJSON &&
     data.productsJSON.length > 0
   ) {
-    return { products: data.productsJSON, itemCount: itemCount };
+    var rawJson = JSON.parse(data.productsJSON);
+
+    if (getType(rawJson) === 'array') {
+      for (var j = 0; j < rawJson.length; j++) {
+        rawJson[j] = normalizeProduct(rawJson[j]);
+      }
+    } else if (getType(rawJson) === 'object') {
+      rawJson = normalizeProduct(rawJson);
+    }
+
+    return { products: rawJson, itemCount: itemCount };
   }
 
   // Fall back to automatic ecommerce collection if no manual config found
@@ -1526,7 +1588,7 @@ scenarios:
       value: undefined,
       itemCount: undefined,
       conversionId: undefined,
-      products: '[{"id":"123456789","category":"Food","name":"Carne Asada Burrito"}]',
+      products: [{"id":"123456789","category":"Food","name":"Carne Asada Burrito"}],
       partner_version: expectedTemplateVersion,
     };
 
@@ -2013,8 +2075,8 @@ scenarios:
     assertThat(metadata.value).isEqualTo(55.99);
     assertThat(metadata.itemCount).isEqualTo(4); // 2 + 1 + 1 (SKU3 - if quantity not provided, we set to 1
     assertThat(metadata.products).isEqualTo([
-      { id: "SKU1", name: "Product A" },
-      { id: "SKU2", name: "Product B" },
+      { id: "SKU1", name: "Product A", quantity: 1 },
+      { id: "SKU2", name: "Product B", quantity: 2},
       { id: "SKU3", name: "Product C" },
     ]);
 
@@ -2291,6 +2353,44 @@ scenarios:
 
     runCode(mockData);
     assertApi("gtmOnSuccess").wasCalled();
+- name: Test Invalid Itemprice and Quantity
+  code: "mockData = {\n  id: \"t2_potato\",\n  eventType: \"AddToCart\",\n  enableFirstPartyCookies:\
+    \ true,\n  productInputType: \"entryManual\",\n  productsRows: [{'id':'123456789','category':'Food','name':'Carne\
+    \ Asada Burrito', \"itemPrice\": \"asd\", \"quantity\": \"asd\"}, {'id':'123456789','category':'Food','name':'Carne\
+    \ Asada Burrito', \"itemPrice\": \"5\", \"quantity\": \"4\"}, {'id':'123456789','category':'Food','name':'Carne\
+    \ Asada Burrito', \"itemPrice\": \"-4\", \"quantity\": \"-3\"}, {'id':'123456789','category':'Food','name':'Carne\
+    \ Asada Burrito', \"itemPrice\": 2, \"quantity\": -1}]\n};\n\nconst expected =\
+    \ {\n  currency: undefined,\n  value: undefined,\n  itemCount: undefined,\n  conversionId:\
+    \ undefined,\n  products: [{'id':'123456789','category':'Food','name':'Carne Asada\
+    \ Burrito'}, {'id':'123456789','category':'Food','name':'Carne Asada Burrito',\
+    \ \"itemPrice\": 5, \"quantity\": 4}, {'id':'123456789','category':'Food','name':'Carne\
+    \ Asada Burrito'}, {'id':'123456789','category':'Food','name':'Carne Asada Burrito',\
+    \ \"itemPrice\": 2}],\n  partner_version: expectedTemplateVersion,\n  \n};\n\n\
+    mock('copyFromWindow', key => {\n  if (key === 'rdt') return function() {\n  \
+    \  if (arguments[0] === 'track') {\n      assertThat(arguments[2], 'Event metadata\
+    \ product parameters incorrect').isEqualTo(expected);\n    }\n  };\n});\n\n//\
+    \ Call runCode to run the template's code.\nrunCode(mockData);\n\n// Verify that\
+    \ the tag finished successfully.\nassertApi('gtmOnSuccess').wasCalled();"
+- name: Test Invalid Itemprice and Quantity JSON
+  code: "mockData = {\n  id: \"t2_potato\",\n  eventType: \"AddToCart\",\n  enableFirstPartyCookies:\
+    \ true,\n  productInputType: \"entryJSON\",\n  productsJSON: '[{\"id\": \"123456789\"\
+    ,\"category\": \"Food\",\"name\": \"Carne Asada Burrito\",\"itemPrice\": \"asd\"\
+    ,\"quantity\": \"asd\"},{\"id\": \"123456789\",\"category\": \"Food\",\"name\"\
+    : \"Carne Asada Burrito\",\"itemPrice\": \"5\",\"quantity\": \"4\"},{\"id\": \"\
+    123456789\",\"category\": \"Food\",\"name\": \"Carne Asada Burrito\",\"itemPrice\"\
+    : \"-4\",\"quantity\": \"-3\"},{\"id\": \"123456789\",\"category\": \"Food\",\"\
+    name\": \"Carne Asada Burrito\",\"itemPrice\": 2,\"quantity\": -1}]'\n};\n\nconst\
+    \ expected = {\n  currency: undefined,\n  value: undefined,\n  itemCount: undefined,\n\
+    \  conversionId: undefined,\n  products: [{'id':'123456789','category':'Food','name':'Carne\
+    \ Asada Burrito'}, {'id':'123456789','category':'Food','name':'Carne Asada Burrito',\
+    \ \"itemPrice\": 5, \"quantity\": 4}, {'id':'123456789','category':'Food','name':'Carne\
+    \ Asada Burrito'}, {'id':'123456789','category':'Food','name':'Carne Asada Burrito',\
+    \ \"itemPrice\": 2}],\n  partner_version: expectedTemplateVersion,\n  \n};\n\n\
+    mock('copyFromWindow', key => {\n  if (key === 'rdt') return function() {\n  \
+    \  if (arguments[0] === 'track') {\n      assertThat(arguments[2], 'Event metadata\
+    \ product parameters incorrect').isEqualTo(expected);\n    }\n  };\n});\n\n//\
+    \ Call runCode to run the template's code.\nrunCode(mockData);\n\n// Verify that\
+    \ the tag finished successfully.\nassertApi('gtmOnSuccess').wasCalled();"
 setup: |-
   let mockData = {
     id: 't2_123',
@@ -2300,7 +2400,7 @@ setup: |-
     advancedMatchingParams: [],
   };
 
-  const expectedTemplateVersion = "1.0.3";
+  const expectedTemplateVersion = "1.0.4";
   const url = 'https://www.redditstatic.com/ads/pixel.js';
 
   mock('injectScript', (url, onSuccess, onFailure) => {
