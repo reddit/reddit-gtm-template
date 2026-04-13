@@ -2,9 +2,11 @@ homepage: "https://www.redditinc.com/advertising"
 documentation: "https://reddit.my.site.com/helpcenter/s/article/Install-the-Reddit-Pixel-on-your-website#GTM"
 versions:
   # Latest Version
+  - sha: 90e0d666582886e5fffcbc7462d79e9e9c4b20e3
+    changeNotes: This release adds product level itemPrice and quantity attributes.
+  # Older versions
   - sha: 59e40dfdd51568e5e1873ca2e32b42d26093e311
     changeNotes: This release adds pixel ID as a query parameter to the pixel script URL.
-  # Older versions
   - sha: e04622ef38aba60b2e1fbc7ce90dd2f69c2c2c9b
     changeNotes: This release updates automatic ecommerce data collection to respect manual product configurations by default, with an explicit checkbox to override this behavior when automatic-only collection is desired.
   - sha: 0c60d8d6b51d1599653d1f2727feb63eb9bbee68
