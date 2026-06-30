@@ -44,7 +44,7 @@ ___TEMPLATE_PARAMETERS___
       },
       {
         "args": [
-          "(t2_|a2_)[a-z0-9]+"
+          "(t2_|a2_|p2_)[a-z0-9]+"
         ],
         "type": "REGEX"
       }
@@ -53,7 +53,7 @@ ___TEMPLATE_PARAMETERS___
     "simpleValueType": true,
     "name": "id",
     "type": "TEXT",
-    "valueHint": "t2_***** or a2_*****"
+    "valueHint": "t2_*****, a2_*****, or p2_*****"
   },
   {
     "type": "TEXT",
