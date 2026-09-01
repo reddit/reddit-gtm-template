@@ -2,9 +2,11 @@ homepage: "https://www.redditinc.com/advertising"
 documentation: "https://reddit.my.site.com/helpcenter/s/article/Install-the-Reddit-Pixel-on-your-website#GTM"
 versions:
   # Latest Version
+  - sha: 4be04837f0c5a699228e94afe94b299a9e18c21c
+    changeNotes: Clarify Product ID requirements in the product help text
+  # Older versions
   - sha: d6564f70d4a0fc93299c7ea70b8a4d2b1403e3df
     changeNotes: Add support for p2 prefixed pixel IDs
-  # Older versions
   - sha: 4e135cad1fdc92eb9173201cdf91fa9522578ef6
     changeNotes: This release adds product level itemPrice and quantity attributes.
   - sha: 59e40dfdd51568e5e1873ca2e32b42d26093e311
